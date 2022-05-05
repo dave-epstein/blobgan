@@ -153,8 +153,10 @@ def DraggableBlobMap(notebook_locals):
             self.press = False
             if event.button == 3:
                 self.L['sizes'][0, [i + 1 for i in closest]] -= 0.25
+                self.event_log.append({'t': time.perf_counter(), 'closest': closest, 'size': -0.25})
             elif event.dblclick or event.button == 2:
                 self.L['sizes'][0, [i + 1 for i in closest]] += 0.25
+                self.event_log.append({'t': time.perf_counter(), 'closest': closest, 'size': +0.25})
             else:
                 render = False
                 self.press = True
