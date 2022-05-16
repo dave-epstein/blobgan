@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ## BlobGAN: Spatially Disentangled Scene Representations<br><sub>Official PyTorch Implementation</sub><br> 
 
 ### [Paper](https://arxiv.org/abs/2205.02837) | [Project Page](https://dave.ml/blobgan) | [Video](https://www.youtube.com/watch?v=KpUv82VsU5k) | [Interactive Demo  ![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://dave.ml/blobgan/demo)
@@ -35,15 +36,15 @@ sudo update-alternatives --install /usr/bin/ninja ninja /usr/local/bin/ninja 1 -
 
 ## Running pretrained models (coming very soon!)
 
-Run `scripts/load_model.py` for an example of how to load a pre-trained model and generate images with it. For example:
+See `scripts/load_model.py` for an example of how to load a pre-trained model and generate images with it. For example:
 
 ```bash
-scripts/load_model.py --model_name bed --dl_dir models --out_dir out --n_imgs 32 --save_blobs --label_blobs
+python scripts/load_model.py --model_name bed --dl_dir models --save_dir out --n_imgs 32 --save_blobs --label_blobs
 ```
 
-See the command's help for more details: `scripts/load_model.py --help`
+See the command's help for more details and options: `scripts/load_model.py --help`
 
-## Training your own model
+## Training your own model (coming very soon!)
 
 ## Citation
 
@@ -62,3 +63,8 @@ If our code or models aided your research, please cite our [paper](https://arxiv
 ## Code acknowledgments
 
 This repository is built on top of rosinality's excellent [PyTorch re-implementation of StyleGAN2](https://github.com/rosinality/stylegan2-pytorch) and Bill Peebles' [GANgealing codebase](https://github.com/wpeebles/gangealing).
+=======
+# Official PyTorch implementation of BlobGAN: Spatially Disentangled Scene Representations
+
+More details coming soon! In the meantime, please check out our [interactive notebook (run locally or on Colab)](https://dave.ml/blobgan/demo).
+>>>>>>> 886a44bbc329932c391f357c76d365522dc741ba

@@ -23,11 +23,13 @@ __all__ = ['download', 'download_mean_latent', 'download_model', 'download_cherr
 
 
 def get_model_name(model_str):
-    if model_str.split(' ')[1].startswith('bed'):
+    if ' ' in model_str:
+        model_str = model_str.split(' ')[1]
+    if model_str.startswith('bed'):
         model = 'bedrooms'
-    elif model_str.split(' ')[1].startswith('kitchen'):
+    elif model_str.startswith('kitchen'):
         model = 'kitchen_living_dining'
-    elif model_str.split(' ')[1].startswith('conference'):
+    elif model_str.startswith('conference'):
         model = 'conference_rooms'
     else:
         raise ValueError('Model name must start with either `bed`, `kitchen`, or `conference`.')
@@ -74,13 +76,13 @@ def for_canvas(img):
     return img[0].round().permute(1, 2, 0).clamp(min=0, max=255).cpu().numpy().astype(np.uint8)
 
 
-def draw_labels(img, layout, T, colors):
+def draw_labels(img, layout, T, colors, layout_i=0):
     font = ImageFont.truetype('/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf', 20)
     img = Image.fromarray(img)
     draw = ImageDraw.Draw(img)
-    mask = layout['sizes'][0, 1:] > T
+    mask = layout['sizes'][layout_i, 1:] > T
     idmap = torch.arange(len(mask))[mask]
-    blob = {k: layout[k][0][mask].mul(255).tolist() for k in ('xs', 'ys')}
+    blob = {k: layout[k][layout_i][mask].mul(255).tolist() for k in ('xs', 'ys')}
     for i, (x, y) in enumerate(zip(blob['xs'], blob['ys'])):
         I = idmap[i]
         _, h = draw.textsize(str(I), font=font)
