@@ -4,7 +4,7 @@ from numbers import Number
 
 from omegaconf import DictConfig
 from torch import Tensor
-from .distributed import is_rank_zero
+from .distributed import print_once
 
 
 def scalars_to_log_dict(scalars: Dict[Any, Union[Number, Tensor]], mode: str) -> Dict[str, Number]:
@@ -46,7 +46,6 @@ def scale_logging_rates(d: DictConfig, c: Number, strs: Tuple[str] = ('log', 'ev
     for k, v in d.items():
         if all([s in k for s in strs]):
             d[k] = type(v)(v * c)
-            if is_rank_zero():
-                print(f'Scaling {prefix}.{k} from {v} to {type(v)(v * c)} due to gradient accumulation')
+            print_once(f'Scaling {prefix}.{k} from {v} to {type(v)(v * c)} due to gradient accumulation')
         elif isinstance(v, DictConfig):
             scale_logging_rates(v, c, strs, prefix=prefix + '.' + k)

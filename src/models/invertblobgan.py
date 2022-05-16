@@ -16,7 +16,7 @@ from torchvision.utils import make_grid
 
 from models import networks, BlobGAN
 from models.base import BaseModule
-from utils import FromConfig, run_at_step, freeze, is_rank_zero, load_pretrained_weights, to_dataclass_cfg
+from utils import FromConfig, run_at_step, freeze, is_rank_zero, load_pretrained_weights, to_dataclass_cfg, print_once
 
 # SPLAT_KEYS = ['spatial_style', 'xs', 'ys', 'covs', 'sizes']
 SPLAT_KEYS = ['spatial_style', 'scores_pyramid']
@@ -81,8 +81,7 @@ class BlobGANInverter(BaseModule):
 
     def configure_optimizers(self) -> Union[optim, List[optim]]:
         params = list(self.inverter.parameters())
-        if is_rank_zero():
-            print(f'Optimizing {sum([p.numel() for p in params]) / 1e6:.2f}M params')
+        print_once(f'Optimizing {sum([p.numel() for p in params]) / 1e6:.2f}M params')
         return torch.optim.AdamW(params, lr=self.lr, eps=self.eps, weight_decay=0)
 
     def optimizer_step(

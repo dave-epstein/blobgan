@@ -7,12 +7,11 @@ from typing import Any, Optional, Union, Dict, List, Callable
 
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import DataLoader, Dataset
-from torch.utils.data.dataset import T_co
 from torchvision import transforms
 from torchvision.transforms import InterpolationMode
 
 from data.utils import ImageFolderWithFilenames
-from utils import is_rank_zero
+from utils import print_once
 
 _all__ = ['MultiImageFolderDataModule']
 
@@ -45,8 +44,7 @@ class MultiImageFolderDataModule(LightningDataModule):
                 self.data[split] = MultiImageFolderWithFilenames(self.basepath, self.categories, split,
                                                              transform=self.transform)
             except FileNotFoundError:
-                if is_rank_zero():
-                    print(f'Could not create dataset for split {split}')
+                print_once(f'Could not create dataset for split {split}')
 
     def train_dataloader(self) -> DataLoader:
         return self._get_dataloader('train')
@@ -75,8 +73,7 @@ class MultiImageFolderWithFilenames(Dataset):
         self._n_datasets = len(self.datasets)
         self._dataset_lens = [len(d) for d in self.datasets]
         self._len = self._n_datasets * max(self._dataset_lens)
-        if is_rank_zero():
-            print(f'Created dataset with {self.categories}. '
+        print_once(f'Created dataset with {self.categories}. '
                   f'Lengths are {self._dataset_lens}. Effective dataset length is {self._len}.')
 
     def __getitem__(self, index):

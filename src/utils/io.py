@@ -14,7 +14,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from torch import Tensor
 from torchvision.utils import make_grid
 
-from .distributed import is_rank_zero
+from .distributed import print_once
 
 BED_CONF_COLORS = torch.tensor([[0.9803921580314636, 0.9450980424880981, 0.9176470637321472],
           [0.8980392217636108, 0.5254902243614197, 0.0235294122248888],
@@ -142,8 +142,7 @@ def load_pretrained_weights(name, pretrained, model):
             state_dict_prefix += '.'
             state = {k.replace(state_dict_prefix, ''): v for k, v in state.items() if k.startswith(state_dict_prefix)}
         getattr(model, load_fn)(state)
-        if is_rank_zero():
-            print(f'Loaded state from {pretrained} for {name}')
+        print_once(f'Loaded state from {pretrained} for {name}')
     return model
 
 
@@ -160,8 +159,7 @@ def get_checkpoint_path(log_dir: str, project: str, id: str, step: Optional[int]
         try:
             fn = next(filter(lambda fn: fn.endswith('last.ckpt'), checkpoints))
         except StopIteration:
-            if is_rank_zero():
-                print('No checkpoint ending in `last.pt` found, perhaps since checkpointing was done every N steps, '
+            print_once('No checkpoint ending in `last.pt` found, perhaps since checkpointing was done every N steps, '
                       'without a monitoring metric. Using most recent available checkpoint instead.')
             fn = checkpoints[0]
     elif best:
@@ -183,8 +181,7 @@ def get_checkpoint_path(log_dir: str, project: str, id: str, step: Optional[int]
                              f'Valid checkpoints are: {", ".join(map(os.path.basename, checkpoints))}')
     epoch, = re.search('epoch=(\d+)', fn).groups()
     step, = re.search('step=(\d+)', fn).groups()
-    if is_rank_zero():
-        print(f'Resuming from epoch {epoch}, step {step}')
+    print_once(f'Resuming from epoch {epoch}, step {step}')
     return fn
 
 
@@ -192,8 +189,7 @@ def resolve_resume_id(log_dir: str, id: str, **kwargs) -> str:
     if id == "latest_run":
         base_path = Path(log_dir).absolute()
         latest_id = os.readlink(next((base_path / "wandb").glob('*latest-run*')))[-8:]
-        if is_rank_zero():
-            print(f'Resuming from latest run: {latest_id}')
+        print_once(f'Resuming from latest run: {latest_id}')
         return latest_id
     return id
 

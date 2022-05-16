@@ -66,12 +66,12 @@ model:
       noise_dim: ${model.G.noise_dim}
       norm_features: true
       mlp_lr_mul: 0.01
-      mlp_hidden_dim: 768
+      mlp_hidden_dim: 1024
       spatial_style: ${model.G.spatial_style}
     D_reg_every: 16
     G_reg_every: -1
     λ: ${.lambda}
-    log_images_every_n_steps: 200
+    log_images_every_n_steps: 1000
     n_features_min: ${model.G.n_features}
     n_features_max: ${model.G.n_features}
     n_features: 10

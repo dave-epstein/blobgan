@@ -9,18 +9,16 @@ def is_rank_zero():
     return get_rank() == 0
 
 
-def setup_distributed():
-    local_rank = int(os.environ['LOCAL_RANK']) if 'LOCAL_RANK' in os.environ else 0
-    n_gpu = int(os.environ['WORLD_SIZE']) if 'WORLD_SIZE' in os.environ else 1
-    is_distributed = n_gpu > 1
-    if is_distributed:
-        torch.cuda.set_device(local_rank)
-        dist.init_process_group(backend="nccl", init_method="env://")
-        synchronize()
-    return is_distributed
+def print_once(s):
+    if is_rank_zero():
+        print(s)
 
 
 def get_rank():
+    return int(os.environ.get('LOCAL_RANK', 0))
+
+
+def get_rank_colab():
     if not dist.is_available():
         return 0
 
@@ -37,7 +35,7 @@ def primary():
     if not dist.is_initialized():
         return True
 
-    return get_rank() == 0
+    return get_rank_colab() == 0
 
 
 def synchronize():

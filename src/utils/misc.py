@@ -6,7 +6,6 @@ from typing import Any, Union, TypeVar, Tuple, Optional, Dict, OrderedDict
 
 import einops
 import numpy as np
-import opt_einsum as oe
 import torch
 from PIL import Image, ImageDraw
 from omegaconf import DictConfig

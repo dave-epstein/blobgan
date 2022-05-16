@@ -22,7 +22,7 @@ from torchvision.utils import make_grid
 from models import networks
 from models.base import BaseModule
 from utils import FromConfig, run_at_step, get_D_stats, G_path_loss, D_R1_loss, freeze, is_rank_zero, accumulate, \
-    mixing_noise, pyramid_resize, splat_features_from_scores, rotation_matrix
+    mixing_noise, pyramid_resize, splat_features_from_scores, rotation_matrix, print_once
 import utils
 
 # SPLAT_KEYS = ['spatial_style', 'xs', 'ys', 'covs', 'sizes']
@@ -83,11 +83,11 @@ class BlobGAN(BaseModule):
     validate_gradients: bool = False
     ipdb_on_nan: bool = False
     # Input feature generation
-    n_features_min: int = 3
-    n_features_max: int = 5
+    n_features_min: int = 10
+    n_features_max: int = 10
     feature_splat_temp: int = 2
     spatial_style: bool = False
-    ab_norm: float = 0.01
+    ab_norm: float = 0.02
     feature_jitter_xy: float = 0.0
     feature_jitter_shift: float = 0.0
     feature_jitter_angle: float = 0.0
@@ -146,8 +146,7 @@ class BlobGAN(BaseModule):
                                     betas=(0 ** G_reg_ratio, 0.99 ** G_reg_ratio), eps=self.eps, weight_decay=0)
         D_optim = torch.optim.AdamW(D_params, lr=self.lr * D_reg_ratio,
                                     betas=(0 ** D_reg_ratio, 0.99 ** D_reg_ratio), eps=self.eps, weight_decay=0)
-        if is_rank_zero():
-            print(f'Optimizing {sum([p.numel() for grp in G_params for p in grp["params"]]) / 1e6:.2f}M params for G '
+        print_once(f'Optimizing {sum([p.numel() for grp in G_params for p in grp["params"]]) / 1e6:.2f}M params for G '
                   f'and {sum([p.numel() for p in D_params]) / 1e6:.2f}M params for D')
         if self.freeze_G:
             return D_optim
@@ -501,8 +500,7 @@ class BlobGAN(BaseModule):
         imgs = {
             'real_imgs': batch_real,
             'gen_imgs': gen_imgs,
-            'feature_imgs': layout['feature_img'],
-            'entropy_imgs': layout['entropy_img']
+            'feature_imgs': layout['feature_img']
         }
 
         # Compute train regularization loss

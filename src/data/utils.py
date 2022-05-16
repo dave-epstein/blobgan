@@ -5,7 +5,7 @@ from typing import Optional, Callable, Any
 import torch
 from torchvision.datasets.folder import default_loader, ImageFolder, make_dataset
 
-from utils import is_rank_zero
+from utils import is_rank_zero, print_once
 
 
 class ImageFolderWithFilenames(ImageFolder):
@@ -33,11 +33,9 @@ class ImageFolderWithFilenames(ImageFolder):
         cache_path = os.path.join(directory, 'cache.pt')
         try:
             dataset = torch.load(cache_path, map_location='cpu')
-            if is_rank_zero():
-                print(f'Loading dataset from cache in {directory}')
+            print_once(f'Loading dataset from cache in {directory}')
         except FileNotFoundError:
-            if is_rank_zero():
-                print(f'Creating dataset and saving to cache in {directory}')
+            print_once(f'Creating dataset and saving to cache in {directory}')
             dataset = make_dataset(directory, class_to_idx, extensions=extensions, is_valid_file=is_valid_file)
             if is_rank_zero():
                 torch.save(dataset, cache_path)

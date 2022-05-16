@@ -30,7 +30,7 @@ model:
     size: ${model.resolution}
   D_reg_every: 16
   λ: ${.lambda}
-  log_images_every_n_steps: 200
+  log_images_every_n_steps: 1000
 trainer:
   limit_val_batches: 0
   precision: 32

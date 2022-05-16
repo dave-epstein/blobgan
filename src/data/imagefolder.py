@@ -9,7 +9,9 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.transforms import InterpolationMode
 
+from data.nodata import NullIterableDataset
 from data.utils import ImageFolderWithFilenames
+from utils import print_once
 
 _all__ = ['ImageFolderDataModule']
 
@@ -38,8 +40,18 @@ class ImageFolderDataModule(LightningDataModule):
     def setup(self, stage: Optional[str] = None):
         for split in ('train', 'validate', 'test'):
             path = self.path / split
+            empty = True
             if path.exists():
-                self.data[split] = ImageFolderWithFilenames(path, transform=self.transform)
+                try:
+                    self.data[split] = ImageFolderWithFilenames(path, transform=self.transform)
+                    empty = False
+                except FileNotFoundError:
+                    pass
+            if empty:
+                print_once(
+                    f'Warning: no images found in {path}. Using empty dataset for split {split}. '
+                    f'Perhaps you set `dataset.path` incorrectly?')
+                self.data[split] = NullIterableDataset(1)
 
     def train_dataloader(self) -> DataLoader:
         return self._get_dataloader('train')

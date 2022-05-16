@@ -12,3 +12,4 @@ trainer:
 wandb:
   group: debug
 detect_anomalies: true
+logger: false

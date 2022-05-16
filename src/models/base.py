@@ -8,7 +8,7 @@ from einops import rearrange
 from pytorch_lightning import LightningModule
 from torch import Tensor
 
-from utils import scalars_to_log_dict, run_at_step, epoch_outputs_to_log_dict, is_rank_zero, get_rank
+from utils import scalars_to_log_dict, run_at_step, epoch_outputs_to_log_dict, is_rank_zero, get_rank, print_once
 
 
 class BaseModule(LightningModule):
@@ -105,7 +105,6 @@ class BaseModule(LightningModule):
         if not valid_gradients:
             depth_two_params = [k for k, _ in groupby(
                 ['.'.join(n.split('.')[:2]).replace('.weight', '').replace('.bias', '') for n in invalid_params])]
-            if is_rank_zero():
-                print(f'Detected inf/NaN gradients for parameters {", ".join(depth_two_params)}. '
+            print_once(f'Detected inf/NaN gradients for parameters {", ".join(depth_two_params)}. '
                       f'Skipping epoch {self.current_epoch}, batch index {self.batch_idx}, global step {self.global_step}.')
             self.zero_grad(set_to_none=True)

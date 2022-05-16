@@ -1,0 +1,5 @@
+# @package _global_
+model:
+  feature_jitter_xy: 0.04
+  feature_jitter_shift: 0.5
+  feature_jitter_angle: 0.1

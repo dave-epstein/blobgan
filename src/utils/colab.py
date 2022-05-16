@@ -2,21 +2,35 @@ import os.path
 import time
 from collections import defaultdict
 
+import ipywidgets as widgets
+import matplotlib.pyplot as plt
+import numpy as np
+from IPython.display import HTML
+from PIL import ImageDraw, Image, ImageFont
+from tqdm.notebook import tqdm
+
+import torchvision.transforms.functional as FF
+from moviepy.editor import *
+
 import ipywidgets
 import torch
 from torchvision.datasets.utils import download_url
 
 from .distributed import primary, synchronize
 
-__all__ = ['download', 'download_mean_latent', 'download_model', 'download_cherrypicked', 'DraggableBlobMap']
+__all__ = ['download', 'download_mean_latent', 'download_model', 'download_cherrypicked', 'DraggableBlobMap',
+           'viz_score_fn', 'norm_img', 'for_canvas', 'draw_labels', 'clone_layout']
 
 
 def get_model_name(model_str):
-    model = 'bedrooms'
-    if model_str.split(' ')[1].startswith('kitchen'):
+    if model_str.split(' ')[1].startswith('bed'):
+        model = 'bedrooms'
+    elif model_str.split(' ')[1].startswith('kitchen'):
         model = 'kitchen_living_dining'
     elif model_str.split(' ')[1].startswith('conference'):
         model = 'conference_rooms'
+    else:
+        raise ValueError('Model name must start with either `bed`, `kitchen`, or `conference`.')
     return model
 
 
@@ -43,6 +57,37 @@ def download(model_str, suffix, path, load):
         return torch.load(local_path, map_location=lambda storage, loc: storage)
     else:
         return local_path
+
+
+# Util functions
+def viz_score_fn(score):
+    score = score.clone()
+    score[..., 1:].mul_(2).clamp_(max=1)
+    return score
+
+
+def norm_img(img):
+    return img.add(1).div(2).clamp(min=0, max=1)
+
+
+def for_canvas(img):
+    return img[0].round().permute(1, 2, 0).clamp(min=0, max=255).cpu().numpy().astype(np.uint8)
+
+
+def draw_labels(img, layout, T, colors):
+    font = ImageFont.truetype('/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf', 20)
+    img = Image.fromarray(img)
+    draw = ImageDraw.Draw(img)
+    mask = layout['sizes'][0, 1:] > T
+    idmap = torch.arange(len(mask))[mask]
+    blob = {k: layout[k][0][mask].mul(255).tolist() for k in ('xs', 'ys')}
+    for i, (x, y) in enumerate(zip(blob['xs'], blob['ys'])):
+        I = idmap[i]
+        _, h = draw.textsize(str(I), font=font)
+        w = h
+        color = tuple(colors[I + 1].mul(255).round().int().tolist())
+        draw.text((x - w / 2, y - h / 2), f'{I}', fill=color, stroke_width=1, font=font, stroke_fill=(0, 0, 0))
+    return FF.to_tensor(img).permute(1, 2, 0), img
 
 
 def clone_layout(l):
@@ -111,13 +156,13 @@ def DraggableBlobMap(notebook_locals):
 
             # Render images on canvas
             blobs = for_canvas(self.L['feature_img'].mul(255))
-            labeled_blobs, labeled_blobs_img = draw_labels(blobs, self.L, self.size_threshold)
+            labeled_blobs, labeled_blobs_img = draw_labels(blobs, self.L, self.size_threshold, COLORS)
             img = for_canvas(img)
             imgdict = {
-                    'img': img,
-                    'blobs': blobs,
-                    'labeled_blobs': labeled_blobs_img
-                }
+                'img': img,
+                'blobs': blobs,
+                'labeled_blobs': labeled_blobs_img
+            }
 
             if to_canvas:
                 self.imgs = imgdict
@@ -153,10 +198,8 @@ def DraggableBlobMap(notebook_locals):
             self.press = False
             if event.button == 3:
                 self.L['sizes'][0, [i + 1 for i in closest]] -= 0.25
-                self.event_log.append({'t': time.perf_counter(), 'closest': closest, 'size': -0.25})
             elif event.dblclick or event.button == 2:
                 self.L['sizes'][0, [i + 1 for i in closest]] += 0.25
-                self.event_log.append({'t': time.perf_counter(), 'closest': closest, 'size': +0.25})
             else:
                 render = False
                 self.press = True
@@ -172,7 +215,7 @@ def DraggableBlobMap(notebook_locals):
         def threshold_slider_update(self, change):
             if change['name'] == 'value':
                 # Update image with new labels
-                blob_fig.set_data(draw_labels(self.imgs['blobs'], self.L, change['new'])[1])
+                blob_fig.set_data(draw_labels(self.imgs['blobs'], self.L, change['new'], COLORS)[1])
                 self.size_threshold = change['new']
                 fig.canvas.draw_idle
 
@@ -228,14 +271,16 @@ def DraggableBlobMap(notebook_locals):
                             if 'dy' in e:
                                 self.L['ys'][0, ids] += e['dy'] / n_frames
                             if 'size' in e:
-                                self.L['sizes'][0, [i+1 for i in ids]] += e['size'] / n_frames
+                                self.L['sizes'][0, [i + 1 for i in ids]] += e['size'] / n_frames
                             out = self.render(to_canvas=False)
                             imgs.append(out['img'])
                             blobs.append(out['blobs'])
-                img_clip = concatenate_videoclips([ImageClip(i).set_duration(1/record_fps).set_fps(record_fps) for i in imgs], method="compose")
+                img_clip = concatenate_videoclips(
+                    [ImageClip(i).set_duration(1 / record_fps).set_fps(record_fps) for i in imgs], method="compose")
                 img_clip_name = f'{self.image_name}_image.mp4'
                 img_clip.set_fps(record_fps).write_videofile(img_clip_name, verbose=False, logger=None)
-                blob_clip = concatenate_videoclips([ImageClip(i).set_duration(1/record_fps).set_fps(record_fps) for i in blobs], method="compose")
+                blob_clip = concatenate_videoclips(
+                    [ImageClip(i).set_duration(1 / record_fps).set_fps(record_fps) for i in blobs], method="compose")
                 blob_clip_name = f'{self.image_name}_blobs.mp4'
                 blob_clip.set_fps(record_fps).write_videofile(blob_clip_name, verbose=False, logger=None)
                 with log:

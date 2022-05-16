@@ -11,7 +11,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 import data
 import models
 import utils
-from utils import is_rank_zero, scale_logging_rates
+from utils import scale_logging_rates, print_once
 
 
 @hydra.main(config_path="configs", config_name="fit")
@@ -22,16 +22,14 @@ def run(config: DictConfig):
     if config.trainer.deterministic:
         os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 
-    if is_rank_zero():
-        print(OmegaConf.to_yaml(config, resolve=True))
+    print_once(OmegaConf.to_yaml(config, resolve=True))
 
     seed_everything(config.seed, workers=True)
 
     scale_logging_rates(config, 1 / config.trainer.get('accumulate_grad_batches', 1))
 
     if config.get('detect_anomalies', False):
-        if is_rank_zero():
-            print('Anomaly detection mode ACTIVATED')
+        print_once('Anomaly detection mode ACTIVATED')
         torch.autograd.set_detect_anomaly(True)
 
     config.resume.id = utils.resolve_resume_id(**config.resume)
