@@ -1,2 +1,4 @@
 every_n_train_steps: 3000
 save_top_k: -1
+mode: max
+monitor: step

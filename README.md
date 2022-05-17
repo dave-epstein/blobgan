@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ## BlobGAN: Spatially Disentangled Scene Representations<br><sub>Official PyTorch Implementation</sub><br> 
 
 ### [Paper](https://arxiv.org/abs/2205.02837) | [Project Page](https://dave.ml/blobgan) | [Video](https://www.youtube.com/watch?v=KpUv82VsU5k) | [Interactive Demo  ![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://dave.ml/blobgan/demo)
@@ -34,9 +33,9 @@ sudo update-alternatives --install /usr/bin/ninja ninja /usr/local/bin/ninja 1 -
 ````
 
 
-## Running pretrained models (coming very soon!)
+## Running pretrained models
 
-See `scripts/load_model.py` for an example of how to load a pre-trained model and generate images with it. For example:
+See `scripts/load_model.py` for an example of how to load a pre-trained model (using the provided `load_model` function, which can be called from elsewhere) and generate images with it. You can also run the file from the command line to generate images and save them to disk. For example:
 
 ```bash
 python scripts/load_model.py --model_name bed --dl_dir models --save_dir out --n_imgs 32 --save_blobs --label_blobs
@@ -44,7 +43,27 @@ python scripts/load_model.py --model_name bed --dl_dir models --save_dir out --n
 
 See the command's help for more details and options: `scripts/load_model.py --help`
 
-## Training your own model (coming very soon!)
+## Training your own model
+
+**Before training your model**, you'll need to modify `src/configs/experiments/local.yaml` to include your WandB information and machine-specific configuration (such as path to data -- `dataset.path` or `dataset.basepath` -- and number of GPUs `trainer.gpus`). To turn off logging entirely, pass `logger=false`, or to only log to disk but not write to server, pass `wandb.offline=true`. Our code currently only supports WandB logging.
+
+Here's an example command which will train a model on LSUN bedrooms. We list the configuration modules to load for this experiment (`blobgan`, `local`, `jitter`) and then specify any other options as we desire. For example, if we wanted to train a model without jitter, we could just remove that module from the `experiments` array.
+
+```bash
+python src/run.py +experiment=[blobgan,local,jitter] wandb.name='10-blob BlobGAN on bedrooms'
+```
+
+In some shells, you may need to add extra quotes around some of these options to prevent them from being parsed immediately on the command line.
+
+Train on the LSUN category of your choice by passing in `dataset.category`, e.g. `dataset.category=church`. Tackle multiple categories at once with `dataset=multilsun` and `dataset.categories=[kitchen,bedroom]`.
+
+You can also train on any collection of images by selecting `dataset=imagefolder` and passing in the path. The code expects at least a subfolder named `train` and optional subfolders named `validate` and `test`. The below command also illustrates how to set arbitrary options using Hydra syntax, such as turning off FID logging or changing dataloader batch size:
+
+```bash
+python src/run.py +experiment=[blobgan,local,jitter] wandb.name='20-blob BlobGAN on Places' dataset.dataloader.batch_size=24 +model.log_fid_every_epoch=false dataset=imagefolder +dataset.path=/path/to/places/ model.n_features=20
+```
+
+Other parameters of interest are likely `trainer.log_every_n_steps` and `model.log_images_every_n_steps` which control frequency of logging scalars and images, and `checkpoint.every_n_train_steps` and `checkpoint.save_top_k` which dictate checkpoint saving frequency and decide how many most recent checkpoints to keep (`-1` means keep everything).
 
 ## Citation
 
@@ -67,4 +86,3 @@ This repository is built on top of rosinality's excellent [PyTorch re-implementa
 # Official PyTorch implementation of BlobGAN: Spatially Disentangled Scene Representations
 
 More details coming soon! In the meantime, please check out our [interactive notebook (run locally or on Colab)](https://dave.ml/blobgan/demo).
->>>>>>> 886a44bbc329932c391f357c76d365522dc741ba

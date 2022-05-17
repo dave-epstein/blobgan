@@ -6,12 +6,11 @@ import pytorch_lightning as pl
 import torch
 from omegaconf import OmegaConf, DictConfig
 from pytorch_lightning import seed_everything
-from pytorch_lightning.callbacks import ModelCheckpoint
 
 import data
 import models
 import utils
-from utils import scale_logging_rates, print_once
+from utils import scale_logging_rates, print_once, Checkpoint
 
 
 @hydra.main(config_path="configs", config_name="fit")
@@ -65,7 +64,7 @@ def run(config: DictConfig):
     checkpoint_callback = 'checkpoint' in config and config.checkpoint is not None
 
     if logger and checkpoint_callback:
-        checkpoint_cb = ModelCheckpoint(**config.checkpoint,
+        checkpoint_cb = Checkpoint(**config.checkpoint,
                                         dirpath=Path(os.environ["EXP_LOG_DIR"]) / 'checkpoints')
         checkpoint_cb.CHECKPOINT_NAME_LAST = checkpoint_cb.CHECKPOINT_JOIN_CHAR.join(["{epoch}", "{step}", "last"])
         callbacks.append(checkpoint_cb)
