@@ -6,14 +6,18 @@ https://user-images.githubusercontent.com/5674727/168323496-990b46a2-a11d-4192-8
 
 This repository contains:
 
-* 🚂 Pre-trained BlobGAN models on three datasets: bedrooms, conference rooms, and a combination of kitchens, living rooms, and dining rooms
-* 💻 Code based on PyTorch Lightning ⚡ and Hydra 🐍 which fully supports CPU, single GPU, or multi GPU/node training and inference
+* 🚂Pre-trained BlobGAN models on three datasets: bedrooms, conference rooms, and a combination of kitchens, living rooms, and dining rooms
+* 💻Code based on PyTorch Lightning ⚡ and Hydra 🐍 which fully supports CPU, single GPU, or multi GPU/node training and inference
 
-And, **coming soon**, easy-to-run 🖋scripts to:
+We also provide an [📓interactive demo notebook](https://dave.ml/blobgan/demo) to help get started using our model. Download this notebook and run it on your own Python environment, or test it out on Colab. You can:
 
-* 🖌️️ Generate and edit realistic images with an interactive UI
-* 📸 Upload your own image and convert it into blobs!
-* 🧬 Programmatically modify images and reproduce results from our paper
+* 🖌️️Generate and edit realistic images with an interactive UI
+* 📹Create animated videos showing off your edited scenes
+
+And, **coming soon!**
+
+* 📸Upload your own image and convert it into blobs!
+* 🧬Programmatically modify images and reproduce results from our paper
 
 ## Setup
 
@@ -82,7 +86,3 @@ If our code or models aided your research, please cite our [paper](https://arxiv
 ## Code acknowledgments
 
 This repository is built on top of rosinality's excellent [PyTorch re-implementation of StyleGAN2](https://github.com/rosinality/stylegan2-pytorch) and Bill Peebles' [GANgealing codebase](https://github.com/wpeebles/gangealing).
-=======
-# Official PyTorch implementation of BlobGAN: Spatially Disentangled Scene Representations
-
-More details coming soon! In the meantime, please check out our [interactive notebook (run locally or on Colab)](https://dave.ml/blobgan/demo).
