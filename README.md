@@ -6,18 +6,18 @@ https://user-images.githubusercontent.com/5674727/168323496-990b46a2-a11d-4192-8
 
 This repository contains:
 
-* 🚂Pre-trained BlobGAN models on three datasets: bedrooms, conference rooms, and a combination of kitchens, living rooms, and dining rooms
-* 💻Code based on PyTorch Lightning ⚡ and Hydra 🐍 which fully supports CPU, single GPU, or multi GPU/node training and inference
+* 🚂 Pre-trained BlobGAN models on three datasets: bedrooms, conference rooms, and a combination of kitchens, living rooms, and dining rooms
+* 💻 Code based on PyTorch Lightning ⚡ and Hydra 🐍 which fully supports CPU, single GPU, or multi GPU/node training and inference
 
 We also provide an [📓interactive demo notebook](https://dave.ml/blobgan/demo) to help get started using our model. Download this notebook and run it on your own Python environment, or test it out on Colab. You can:
 
-* 🖌️️Generate and edit realistic images with an interactive UI
-* 📹Create animated videos showing off your edited scenes
+* 🖌️️ Generate and edit realistic images with an interactive UI
+* 📹 Create animated videos showing off your edited scenes
 
 And, **coming soon!**
 
-* 📸Upload your own image and convert it into blobs!
-* 🧬Programmatically modify images and reproduce results from our paper
+* 📸 Upload your own image and convert it into blobs!
+* 🧬 Programmatically modify images and reproduce results from our paper
 
 ## Setup
 
