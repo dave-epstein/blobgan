@@ -9,7 +9,7 @@ This repository contains:
 * 🚂 Pre-trained BlobGAN models on three datasets: bedrooms, conference rooms, and a combination of kitchens, living rooms, and dining rooms
 * 💻 Code based on PyTorch Lightning ⚡ and Hydra 🐍 which fully supports CPU, single GPU, or multi GPU/node training and inference
 
-We also provide an [📓interactive demo notebook](https://dave.ml/blobgan/demo) to help get started using our model. Download this notebook and run it on your own Python environment, or test it out on Colab. You can:
+We also provide an [📓 interactive demo notebook](https://dave.ml/blobgan/demo) to help get started using our model. Download this notebook and run it on your own Python environment, or test it out on Colab. You can:
 
 * 🖌️️ Generate and edit realistic images with an interactive UI
 * 📹 Create animated videos showing off your edited scenes
@@ -26,15 +26,18 @@ Run the commands below one at a time to download the latest version of the BlobG
 ```bash
 git clone https://github.com/dave-epstein/blobgan.git
 mkdir -p blobgan/logs/wandb
-conda create -n blobgan python=3.9
+conda create -y -n blobgan python=3.9
 conda activate blobgan
-conda install pytorch=1.11.0 torchvision=0.12.0 torchaudio cudatoolkit=11.3 -c pytorch
-conda install cudatoolkit-dev=11.3 -c conda-forge
-pip install tqdm==4.64.0 hydra-core==1.1.2 omegaconf==2.1.2 clean-fid==0.1.23 wandb==0.12.11 ipdb==0.13.9 lpips==0.1.4 einops==0.4.1 inputimeout==1.0.4 pytorch-lightning==1.5.10 matplotlib==3.5.2 mpl_interactions[jupyter]==0.21.0
+conda install -y pytorch=1.11.0 torchvision=0.12.0 torchaudio cudatoolkit=11.3 -c pytorch
+conda install -y cudatoolkit-dev=11.3 -c conda-forge
+pip install tqdm==4.64.0 hydra-core==1.1.2 omegaconf==2.1.2 clean-fid==0.1.23 wandb==0.12.11 ipdb==0.13.9 lpips==0.1.4 einops==0.4.1 inputimeout==1.0.4 pytorch-lightning==1.5.10 matplotlib==3.5.2 mpl_interactions[jupyter]==0.21.0 protobuf~=3.19.0 moviepy==1.0.3
+```
+And if you haven't installed `ninja` yet on your machine (to compile custom C++ code), do that. On Linux, this looks like:
+```
 wget -q --show-progress https://github.com/ninja-build/ninja/releases/download/v1.10.2/ninja-linux.zip
 sudo unzip -q ninja-linux.zip -d /usr/local/bin/
 sudo update-alternatives --install /usr/bin/ninja ninja /usr/local/bin/ninja 1 --force
-````
+```
 
 
 ## Running pretrained models
@@ -68,6 +71,13 @@ python src/run.py +experiment=[blobgan,local,jitter] wandb.name='20-blob BlobGAN
 ```
 
 Other parameters of interest are likely `trainer.log_every_n_steps` and `model.log_images_every_n_steps` which control frequency of logging scalars and images, and `checkpoint.every_n_train_steps` and `checkpoint.save_top_k` which dictate checkpoint saving frequency and decide how many most recent checkpoints to keep (`-1` means keep everything).
+
+## Known issues and upcoming functionality
+
+* Support for FID calculation 
+* Scripts and models for StyleGAN2 baselines
+* Scripts to reproduce paper figures
+* Inversion pretrained models and code
 
 ## Citation
 
