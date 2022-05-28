@@ -1,0 +1,42 @@
+name: style-gan
+
+conda_env: conda.yaml
+
+entry_points:
+  main:
+    parameters:
+      convert: {type: string, default: True}
+      official_checkpoints: {type: string, default: True}
+      random_seed: {type: int, default: 77}
+      dataset: {type: string, default: ffhq}
+      nrow: {type: int, default: 2}
+      ncol: {type: int, default: 2}
+      g_checkpoint: {type: string, default: ./checkpoints/generator.64x64.0.759840.3460000.158.pt}
+      target_resolution: {type: int, default: 128}
+    command: |
+          python generate.py \
+            --dataset {dataset} \
+            --convert {convert} \
+            --use-official-checkpoints {official_checkpoints} \
+            --random-seed {random_seed} \
+            --nrow {nrow} \
+            --ncol {ncol} \
+            --g-checkpoint {g_checkpoint} \
+            --target-resolution {target_resolution}
+
+  train:
+    parameters:
+      data_root: {type: string, default: ./data/celeba}
+      resume: {type: string, default: True}
+      g_checkpoint: {type: string, default: ./checkpoints/generator.64x64.0.759840.3460000.158.pt}
+      d_checkpoint: {type: string, default: ./checkpoints/discriminator.64x64.0.759840.3460000.158.pt}
+      target_resolution: {type: int, default: 128}
+      n_gpu: {type: int, default: 1}
+    command: |
+          python train.py \
+            --data-root {data_root} \
+            --resume {resume} \
+            --g-checkpoint {g_checkpoint} \
+            --d-checkpoint {d_checkpoint} \
+            --target-resolution {target_resolution} \
+            --n-gpu {n_gpu}

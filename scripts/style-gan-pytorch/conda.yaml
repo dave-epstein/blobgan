@@ -1,0 +1,14 @@
+name: pytorch_stylegan
+channels:
+  - defaults
+  - pytorch
+dependencies:
+  - python=3.6
+  - cudatoolkit=10.0 # my machine has cuda 10.0
+  - pytorch=1.1.0
+  - torchvision=0.3.0
+  - tensorflow-gpu=1.13.1
+  - jupyter=1.0.0
+  - matplotlib=3.1.0
+  - pip:
+      - mlflow>=1.0

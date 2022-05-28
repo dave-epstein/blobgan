@@ -2,28 +2,72 @@ from pathlib import Path
 import os, sys
 import torch
 from PIL import Image
-from tqdm import tqdm
+from tqdm import tqdm, trange
 
 here_dir = os.path.dirname(__file__)
 
-sys.path.append(os.path.join(here_dir, '../src'))
-sys.path.append(os.path.join(here_dir, '../src/blobgan'))
-os.environ['PYTHONPATH'] = os.path.join(here_dir, '../src/blobgan')
+sys.path.append(os.path.join(here_dir, '..', 'src'))
+os.environ['PYTHONPATH'] = os.path.join(here_dir, '..', 'src')
 
-from models import BlobGAN
+from models import BlobGAN, GAN
 from utils import download_model, download_mean_latent, download_cherrypicked, KLD_COLORS, BED_CONF_COLORS, \
-    viz_score_fn, for_canvas, draw_labels
+    viz_score_fn, for_canvas, draw_labels, download
 
 
-def load_model(model_name, path, device='cuda'):
-    ckpt = download_model(model_name, path)
+def load_SGAN1_bedrooms(path, device='cuda'):
+    ckpt = download(path=path, file='SGAN1_bedrooms.pt', load=True)
+    sys.path.append(os.path.join(here_dir, 'style-gan-pytorch'))
+    from networks.style_gan_net import Generator
+
+    model = Generator(resolution=256)
+    model.load_state_dict(ckpt)
+    model.eval()
+    return model.to(device)
+
+
+def load_stylegan_model(model_data, path, device='cuda'):
+    if model_data.startswith('bed'):
+        model = load_SGAN1_bedrooms(path, device)
+        Z = torch.randn((10000, 512)).to(device)
+        latents = [model.g_mapping(Z[_:_ + 1])[0] for _ in trange(10000, desc='Computing mean latent')]
+        model.mean_latent = torch.stack(latents, 0).mean(0)
+
+        def SGAN1_gen(z, truncate):
+            a = 1 - truncate
+            dlatents = model.g_mapping(z).clone()
+            if a < 1:
+                dlatents = a * dlatents + (1 - a) * model.mean_latent
+            x = model.g_synthesis(dlatents, 8, 1).clone()
+            xx = ((x.clamp(min=-1, max=1) + 1) / 2.0) * 255
+            return xx
+
+        model.gen = SGAN1_gen
+    else:
+        datastr = 'conference' if model_data.startswith('conference') else 'kitchenlivingdining'
+        ckpt = download(path=path, file=f'SGAN2_{datastr}.pt')
+        model = GAN.load_from_checkpoint(ckpt, strict=False).to(device)
+        model.get_mean_latent()
+
+        def SGAN2_gen(z, truncate):
+            return model.generator_ema([z], return_image_only=True, truncation=1 - truncate,
+                                       truncation_latent=model.mean_latent).add_(1).div_(2).mul_(255)
+
+        model.gen = SGAN2_gen
+    return model
+
+
+def load_blobgan_model(model_data, path, device='cuda', fixed_noise=False):
+    ckpt = download_model(model_data, path)
     model = BlobGAN.load_from_checkpoint(ckpt, strict=False).to(device)
-    model.mean_latent = download_mean_latent(model_name, path).to(device)
-    model.cherry_picked = download_cherrypicked(model_name, path).to(device)
-    COLORS = KLD_COLORS if 'kitchen' in model_name else BED_CONF_COLORS
+    try:
+        model.mean_latent = download_mean_latent(model_data, path).to(device)
+    except:
+        model.get_mean_latent()
+    model.cherry_picked = download_cherrypicked(model_data, path).to(device)
+    COLORS = KLD_COLORS if 'kitchen' in model_data else BED_CONF_COLORS
     model.colors = COLORS
     noise = [torch.randn((1, 1, 16 * 2 ** ((i + 1) // 2), 16 * 2 ** ((i + 1) // 2))).to(device) for i in
-             range(model.generator_ema.num_layers)]
+             range(model.generator_ema.num_layers)] if fixed_noise else None
     model.noise = noise
     render_kwargs = {
         'no_jitter': True,
@@ -36,7 +80,6 @@ def load_model(model_name, path, device='cuda'):
         'noise': noise
     }
     model.render_kwargs = render_kwargs
-    print('\033[92m' 'Done loading and configuring model!', flush=True)
     return model
 
 
@@ -44,7 +87,8 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-m", "--model_name", default='bed',
+    parser.add_argument("-m", "--model_name", default='blobgan', choices=['blobgan', 'stylegan'])
+    parser.add_argument("-d", "--model_data", default='bed',
                         help="Choose a pretrained model. This must be a string that begins either with `bed` (bedrooms),"
                              " `kitchen` (kitchens, living rooms, and dining rooms),"
                              " or `conference` (conference rooms).")
@@ -59,7 +103,8 @@ if __name__ == "__main__":
     parser.add_argument('-t', '--truncate', default=0.4,
                         help='Amount of truncation to use when generating images. 0 means no truncation, 1 means full truncation.',
                         type=float)
-    parser.add_argument("--save_blobs", action='store_true', help='If passed, save images of blob maps.')
+    parser.add_argument("--save_blobs", action='store_true',
+                        help='If passed, save images of blob maps (when `--model_name` is BlobGAN).')
     parser.add_argument("--label_blobs", action='store_true',
                         help='If passed, add numeric blob labels to blob map images, when `--save_blobs` is true.')
     parser.add_argument('--size_threshold', default=-3,
@@ -69,29 +114,40 @@ if __name__ == "__main__":
                         help='Specify the device on which to run the code, in PyTorch syntax, e.g. `cuda`, `cpu`, `cuda:3`.')
     args = parser.parse_args()
 
-    model = load_model(args.model_name, args.dl_dir)
+    blobgan = args.model_name == 'blobgan'
 
     save_dir = Path(args.save_dir)
-    (save_dir / 'imgs').mkdir(exist_ok=True)
-    if args.save_blobs:
-        (save_dir / 'blobs').mkdir(exist_ok=True)
-        if args.label_blobs:
-            (save_dir / 'blobs_labeled').mkdir(exist_ok=True)
+    (save_dir / 'imgs').mkdir(exist_ok=True, parents=True)
+
+    if blobgan:
+        model = load_blobgan_model(args.model_data, args.dl_dir, args.device)
+
+        if args.save_blobs:
+            (save_dir / 'blobs').mkdir(exist_ok=True, parents=True)
+            if args.label_blobs:
+                (save_dir / 'blobs_labeled').mkdir(exist_ok=True, parents=True)
+    else:
+        model = load_stylegan_model(args.model_data, args.dl_dir, args.device)
 
     n_to_gen = args.n_imgs
     n_gen = 0
 
-    with tqdm(total=args.n_imgs) as pbar:
+    torch.set_grad_enabled(False)
+
+    with tqdm(total=args.n_imgs, desc='Generating images') as pbar:
         while n_to_gen > 0:
             bs = min(args.batch_size, n_to_gen)
             z = torch.randn((bs, 512)).to(args.device)
 
-            layout, orig_img = model.gen(z=z, truncate=args.truncate, **model.render_kwargs)
+            if blobgan:
+                layout, orig_img = model.gen(z=z, truncate=args.truncate, **model.render_kwargs)
+            else:
+                orig_img = model.gen(z=z, truncate=args.truncate)
 
             for i in range(len(orig_img)):
                 img_i = for_canvas(orig_img[i:i + 1])
                 Image.fromarray(img_i).save(str(save_dir / 'imgs' / f'{i + n_gen:04d}.png'))
-                if args.save_blobs:
+                if blobgan and args.save_blobs:
                     blobs_i = for_canvas(layout['feature_img'][i:i + 1].mul(255))
                     Image.fromarray(blobs_i).save(str(save_dir / 'blobs' / f'{i + n_gen:04d}.png'))
                     if args.label_blobs:

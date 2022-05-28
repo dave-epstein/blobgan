@@ -18,6 +18,7 @@ from torch import nn, Tensor
 from torch.cuda.amp import autocast
 from torch.optim import Optimizer
 from torchvision.utils import make_grid
+from tqdm import trange
 
 from models import networks
 from models.base import BaseModule
@@ -438,6 +439,13 @@ class BlobGAN(BaseModule):
         if 'h_stdev' in metadata:
             ret['h_stdev'] = metadata['h_stdev']
         return ret
+
+    def get_mean_latent(self, n_trunc: int = 10000, ema=True):
+        Z = torch.randn((n_trunc, 512)).to(self.device)
+        layout_net = self.layout_net_ema if ema else self.layout_net
+        latents = [layout_net.mlp[:-1](Z[_]) for _ in trange(n_trunc, desc='Computing mean latent')]
+        mean_latent = self.mean_latent = torch.stack(latents, 0).mean(0)
+        return mean_latent
 
     def shared_step(self, batch: Tuple[Tensor, dict], batch_idx: int,
                     optimizer_idx: Optional[int] = None, mode: str = 'train') -> Optional[Union[Tensor, dict]]:

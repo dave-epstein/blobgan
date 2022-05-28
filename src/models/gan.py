@@ -145,6 +145,11 @@ class GAN(BaseModule):
         fid_score = self.all_gather(fid_score).max().item()
         self.log_scalars({'fid': fid_score}, mode, **kwargs)
 
+    def get_mean_latent(self, n_trunc: int = 10000, ema=True):
+        G = self.generator_ema if ema else self.generator
+        mean_latent = self.mean_latent = G.mean_latent(n_trunc)
+        return mean_latent
+
     # Training and evaluation
     def shared_step(self, batch: Tuple[Tensor, dict], batch_idx: int,
                     optimizer_idx: Optional[int] = None, mode: str = 'train') -> Optional[Union[Tensor, dict]]:

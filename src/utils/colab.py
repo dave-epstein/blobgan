@@ -48,8 +48,8 @@ def download_cherrypicked(model_str, path='pretrained'):
     return download(model_str, suffix='_cherrypicked.pt', path=path, load=True)
 
 
-def download(model_str, suffix, path, load):
-    file = get_model_name(model_str) + suffix
+def download(model_str=None, suffix=None, path='.', load=False, file=None):
+    file = file or (get_model_name(model_str) + suffix)
     local_path = os.path.join(path, file)
     if not os.path.isfile(local_path) and primary():
         dl_path = f'http://efrosgans.eecs.berkeley.edu/blobgan/{file}'

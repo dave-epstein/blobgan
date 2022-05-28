@@ -2,6 +2,7 @@ from __future__ import annotations
 
 __all__ = ["BlobGANInverter"]
 
+import random
 from dataclasses import dataclass
 from typing import Optional, Union, List, Callable, Tuple
 
@@ -53,6 +54,9 @@ class BlobGANInverter(BaseModule):
     # Optim
     lr: float = 0.002
     eps: float = 1e-5
+    # Training
+    trunc_min: float = 0.0
+    trunc_max: float = 0.0
 
     def __post_init__(self):
         super().__init__()
@@ -64,7 +68,8 @@ class BlobGANInverter(BaseModule):
         del self.generator.generator
         del self.generator.layout_net
         freeze(self.generator)
-        self.inverter = networks.get_network(**self.inverter, d_out=self.generator.layout_net_ema.mlp[-1].weight.shape[0])
+        self.inverter = networks.get_network(**self.inverter,
+                                             d_out=self.generator.layout_net_ema.mlp[-1].weight.shape[0])
         self.L_LPIPS = LPIPS(net='vgg', verbose=False)
         freeze(self.L_LPIPS)
         self.λ = Lossλs(**self.λ)
@@ -111,33 +116,24 @@ class BlobGANInverter(BaseModule):
         Returns: see description for `mode` above
         """
         # Set up modules and data
-        train = mode == 'train'
         batch_real, batch_labels = batch
         log_images = run_at_step(self.trainer.global_step, self.log_images_every_n_steps)
 
         z = torch.randn(len(batch_real), self.generator.noise_dim).type_as(batch_real)
 
         with torch.no_grad():
-            layout_gt_fake = self.generator.generate_layout(z,  ema=True, viz=log_images)
-            gen_in_gt_fake = {
-                'input': layout_gt_fake['feature_grid'],
-                'styles': {k: layout_gt_fake[k] for k in SPLAT_KEYS} if self.generator.spatial_style else z,
-                'return_latents': True
-            }
-            gen_imgs, latents = self.generator.generator_ema(**gen_in_gt_fake)
+            truncate = self.trunc_min if self.trunc_min == self.trunc_max \
+                else random.uniform(self.trunc_min, self.trunc_max)
+            layout_gt_fake, gen_imgs = self.generator.gen(z, truncate=truncate, ema=True, viz=log_images,
+                                                          ret_layout=True)
 
-        info = dict()
         losses = dict()
 
         z_pred_fake = self.inverter(gen_imgs.detach())
-        layout_pred_fake = self.generator.generate_layout(z_pred_fake,  viz=log_images, ema=True,
-                                                mlp_idx=len(self.generator.layout_net_ema.mlp))
-        gen_in_pred_fake = {
-            'input': layout_pred_fake['feature_grid'],
-            'styles': {k: layout_pred_fake[k] for k in SPLAT_KEYS} if self.generator.spatial_style else z,
-            'return_latents': True
-        }
-        reconstr_fake, latents = self.generator.generator_ema(**gen_in_pred_fake)
+
+        layout_pred_fake, reconstr_fake = self.generator.gen(z_pred_fake, ema=True, viz=log_images, ret_layout=True,
+                                                             mlp_idx=len(self.generator.layout_net_ema.mlp))
+
         losses['fake_MSE'] = (gen_imgs - reconstr_fake).pow(2).mean()
         losses['fake_LPIPS'] = self.L_LPIPS(reconstr_fake, gen_imgs).mean()
         latent_l2_loss = []
@@ -146,14 +142,10 @@ class BlobGANInverter(BaseModule):
         losses['fake_latents_MSE'] = sum(latent_l2_loss) / len(latent_l2_loss)
 
         z_pred_real = self.inverter(batch_real)
-        layout_pred_real = self.generator.generate_layout(z_pred_real,  viz=log_images, ema=True,
-                                                mlp_idx=len(self.generator.layout_net_ema.mlp))
-        gen_in_pred_real = {
-            'input': layout_pred_real['feature_grid'],
-            'styles': {k: layout_pred_real[k] for k in SPLAT_KEYS} if self.generator.spatial_style else z,
-            'return_latents': True
-        }
-        reconstr_real, latents = self.generator.generator_ema(**gen_in_pred_real)
+
+        layout_pred_real, reconstr_real = self.generator.gen(z_pred_fake, ema=True, viz=log_images, ret_layout=True,
+                                                             mlp_idx=len(self.generator.layout_net_ema.mlp))
+
         losses['real_MSE'] = (batch_real - reconstr_real).pow(2).mean()
         losses['real_LPIPS'] = self.L_LPIPS(reconstr_real, batch_real).mean()
 
@@ -166,7 +158,7 @@ class BlobGANInverter(BaseModule):
                 ipdb.set_trace()
             return
         self.log_scalars(losses, mode)
-        # self.log_scalars(info, mode)
+
         imgs = {
             'real': batch_real,
             'real_reconstr': reconstr_real,

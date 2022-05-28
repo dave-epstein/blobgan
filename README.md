@@ -42,13 +42,18 @@ sudo update-alternatives --install /usr/bin/ninja ninja /usr/local/bin/ninja 1 -
 
 ## Running pretrained models
 
-See `scripts/load_model.py` for an example of how to load a pre-trained model (using the provided `load_model` function, which can be called from elsewhere) and generate images with it. You can also run the file from the command line to generate images and save them to disk. For example:
+See `scripts/load_model.py` for an example of how to load a pre-trained model (using the provided `load_{blobgan/stylegan}_model` functions, which can be called from elsewhere) and generate images with it. You can also run the file from the command line to generate images and save them to disk. For example, from the `blobgan` directory, you can run:
 
 ```bash
-python scripts/load_model.py --model_name bed --dl_dir models --save_dir out --n_imgs 32 --save_blobs --label_blobs
+python scripts/load_model.py --model_data bed --dl_dir models --save_dir out --n_imgs 32 --save_blobs --label_blobs
 ```
 
-See the command's help for more details and options: `scripts/load_model.py --help`
+Or
+
+```bash
+python scripts/load_model.py --model_name stylegan --model_data conference --truncate 0.4
+```
+Note that the first run may take a minute or two longer as custom C++ code is compiled. See the command's help for more details and options: `scripts/load_model.py --help`
 
 ## Training your own model
 
