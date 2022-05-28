@@ -186,7 +186,7 @@ def _conv2d_gradfix(transpose, weight_shape, stride, padding, output_padding, di
                                               **common_kwargs).apply(grad_output, grad2_grad_weight, None)
                 assert grad2_input.shape == input.shape
 
-            return grad2_grad_output, grad2_input
+            return grad2_grad_output, grad2_input, None
 
     _conv2d_gradfix_cache[key] = Conv2d
     return Conv2d

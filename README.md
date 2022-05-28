@@ -77,10 +77,19 @@ python src/run.py +experiment=[blobgan,local,jitter] wandb.name='20-blob BlobGAN
 
 Other parameters of interest are likely `trainer.log_every_n_steps` and `model.log_images_every_n_steps` which control frequency of logging scalars and images, and `checkpoint.every_n_train_steps` and `checkpoint.save_top_k` which dictate checkpoint saving frequency and decide how many most recent checkpoints to keep (`-1` means keep everything).
 
+### Training StyleGAN2
+
+Many of the above command line options apply (for controlling data and logging). For example, to train a StyleGAN2 model on LSUN conference rooms, run:
+
+```bash
+python src/run.py +experiment=[gan,local] wandb.name='Conference room StyleGAN2' dataset.category=conference
+```
+
+This uses default StyleGAN2 hyperparameters: R1 regularization on D every 16 steps, path length regularization on G every 4, R1 weight 50 or gamma=100 (the weight is gamma/2).
+
 ## Known issues and upcoming functionality
 
 * Support for FID calculation 
-* Scripts and models for StyleGAN2 baselines
 * Scripts to reproduce paper figures
 * Inversion pretrained models and code
 
