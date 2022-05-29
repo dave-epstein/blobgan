@@ -110,8 +110,7 @@ python src/run.py +experiment=[gan,local] wandb.name='Conference room StyleGAN2'
 This uses default StyleGAN2 hyperparameters: R1 regularization on D every 16 steps, path length regularization on G every 4, R1 weight 50 or gamma=100 (the weight is gamma/2).
 
 ## Known issues and upcoming functionality
-
-* Support for FID calculation 
+ 
 * Scripts to reproduce paper figures
 * Inversion pretrained models and code
 
