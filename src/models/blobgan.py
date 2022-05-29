@@ -75,7 +75,7 @@ class BlobGAN(BaseModule):
     log_fid_every_n_steps: Optional[int] = -1
     log_grads_every_n_steps: Optional[int] = -1
     log_fid_every_epoch: bool = True
-    fid_n_imgs: Optional[int] = 5000
+    fid_n_imgs: Optional[int] = 50000
     fid_stats_name: Optional[str] = None
     flush_cache_every_n_steps: Optional[int] = -1
     fid_num_workers: Optional[int] = 24
@@ -128,6 +128,8 @@ class BlobGAN(BaseModule):
             '`model.log_images_every_n_steps` must be divisible by `trainer.log_every_n_steps` without remainder'
         assert self.log_fid_every_n_steps < 0 or self.log_fid_every_n_steps % self.trainer.log_every_n_steps == 0, \
             '`model.log_fid_every_n_steps` must be divisible by `trainer.log_every_n_steps` without remainder'
+        assert not ((self.log_fid_every_n_steps > -1 or self.log_fid_every_epoch) and (not self.fid_stats_name)), \
+            'Cannot compute FID without name of statistics file to use.'
 
     def configure_optimizers(self) -> Union[optim, List[optim]]:
         G_reg_ratio = self.G_reg_every / ((self.G_reg_every + 1) or -1)
@@ -148,7 +150,7 @@ class BlobGAN(BaseModule):
         D_optim = torch.optim.AdamW(D_params, lr=self.lr * D_reg_ratio,
                                     betas=(0 ** D_reg_ratio, 0.99 ** D_reg_ratio), eps=self.eps, weight_decay=0)
         print_once(f'Optimizing {sum([p.numel() for grp in G_params for p in grp["params"]]) / 1e6:.2f}M params for G '
-                  f'and {sum([p.numel() for p in D_params]) / 1e6:.2f}M params for D')
+                   f'and {sum([p.numel() for p in D_params]) / 1e6:.2f}M params for D')
         if self.freeze_G:
             return D_optim
         else:
@@ -203,12 +205,11 @@ class BlobGAN(BaseModule):
     def log_fid(self, mode, **kwargs):
         def gen_fn(z):
             return self.gen(z, ema=self.accumulate, norm_img=True)
+
         if is_rank_zero():
-            dataset = self.trainer.datamodule.path.name
-            fid_split = "custom"
-            fid_score = fid.compute_fid(gen=gen_fn, dataset_name=self.fid_stats_name or f"lsun_{dataset}",
+            fid_score = fid.compute_fid(gen=gen_fn, dataset_name=self.fid_stats_name,
                                         dataset_res=self.resolution, num_gen=self.fid_n_imgs,
-                                        dataset_split=fid_split, device=self.device,
+                                        dataset_split="custom", device=self.device,
                                         num_workers=self.fid_num_workers, z_dim=self.noise_dim)
         else:
             fid_score = 0.0

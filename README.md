@@ -31,6 +31,8 @@ conda activate blobgan
 conda install -y pytorch=1.11.0 torchvision=0.12.0 torchaudio cudatoolkit=11.3 -c pytorch
 conda install -y cudatoolkit-dev=11.3 -c conda-forge
 pip install tqdm==4.64.0 hydra-core==1.1.2 omegaconf==2.1.2 clean-fid==0.1.23 wandb==0.12.11 ipdb==0.13.9 lpips==0.1.4 einops==0.4.1 inputimeout==1.0.4 pytorch-lightning==1.5.10 matplotlib==3.5.2 mpl_interactions[jupyter]==0.21.0 protobuf~=3.19.0 moviepy==1.0.3
+cd blobgan
+python scripts/setup_fid.py
 ```
 And if you haven't installed `ninja` yet on your machine (to compile custom C++ code), do that. On Linux, this looks like:
 ```
@@ -57,12 +59,14 @@ Note that the first run may take a minute or two longer as custom C++ code is co
 
 ## Training your own model
 
-**Before training your model**, you'll need to modify `src/configs/experiments/local.yaml` to include your WandB information and machine-specific configuration (such as path to data -- `dataset.path` or `dataset.basepath` -- and number of GPUs `trainer.gpus`). To turn off logging entirely, pass `logger=false`, or to only log to disk but not write to server, pass `wandb.offline=true`. Our code currently only supports WandB logging.
+**Before training your model**, you'll need to modify `src/configs/experiments/local.yaml` to include your WandB information and machine-specific configuration (such as path to data -- `dataset.path` or `dataset.basepath` -- and number of GPUs `trainer.gpus`). Alternatively, you can exclude `local` from the `experiments` option in the commands below and specify these parameters directly on the command line. 
+
+To turn off logging entirely, pass `logger=false`, or to only log to disk but not write to server, pass `wandb.offline=true`. Our code currently only supports WandB logging.
 
 Here's an example command which will train a model on LSUN bedrooms. We list the configuration modules to load for this experiment (`blobgan`, `local`, `jitter`) and then specify any other options as we desire. For example, if we wanted to train a model without jitter, we could just remove that module from the `experiments` array.
 
 ```bash
-python src/run.py +experiment=[blobgan,local,jitter] wandb.name='10-blob BlobGAN on bedrooms'
+python src/run.py +experiment=[blobgan,local,jitter] wandb.name='10-blob BlobGAN on bedrooms' 
 ```
 
 In some shells, you may need to add extra quotes around some of these options to prevent them from being parsed immediately on the command line.
@@ -75,7 +79,25 @@ You can also train on any collection of images by selecting `dataset=imagefolder
 python src/run.py +experiment=[blobgan,local,jitter] wandb.name='20-blob BlobGAN on Places' dataset.dataloader.batch_size=24 +model.log_fid_every_epoch=false dataset=imagefolder +dataset.path=/path/to/places/ model.n_features=20
 ```
 
-Other parameters of interest are likely `trainer.log_every_n_steps` and `model.log_images_every_n_steps` which control frequency of logging scalars and images, and `checkpoint.every_n_train_steps` and `checkpoint.save_top_k` which dictate checkpoint saving frequency and decide how many most recent checkpoints to keep (`-1` means keep everything).
+Other parameters of interest are likely `trainer.log_every_n_steps`, `model.log_images_every_n_steps`, and `model.log_fid_every_n_steps`, which control frequency of logging scalars, images, and FID (set any of the latter two to -1 to disable). Also check out `checkpoint.every_n_train_steps` and `checkpoint.save_top_k` which dictate checkpoint saving frequency and decide how many most recent checkpoints to keep (`-1` means keep everything).
+
+### Logging FID during training
+
+In the initial codebase setup, you should have run `scripts/setup_fid.py` which will download and install FID statistics for three different datasets:
+
+* Bedrooms: `lsun_bedroom`
+* Conference rooms: `lsun_conference`
+* Kitchens, living rooms, dining rooms: `lsun_kld`
+
+**If either `model.log_fid_every_n_steps > -1` or `model.log_fid_every_epoch == true`, make sure that `model.fid_stats_name` is passed in.** If you are training on one of the three datasets from the paper, just pass in the string from the list above.
+
+If you are training on your own data, you'll need to first run `setup_fid.py` to precompute statistics on that. The command might look something like:
+
+```bash
+python scripts/setup_fid.py --action compute_new --path /path/to/new/data --name newdata -j 32 -bs 256
+```
+
+Then, pass `model.fid_stats_name=newdata` on the command line.
 
 ### Training StyleGAN2
 

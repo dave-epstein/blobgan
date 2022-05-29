@@ -15,7 +15,7 @@ from utils import download_model, download_mean_latent, download_cherrypicked, K
 
 
 def load_SGAN1_bedrooms(path, device='cuda'):
-    ckpt = download(path=path, file='SGAN1_bedrooms.pt', load=True)
+    ckpt = download(path=path, file='SGAN1_bedrooms.ckpt', load=True)
     sys.path.append(os.path.join(here_dir, 'style-gan-pytorch'))
     from networks.style_gan_net import Generator
 
@@ -44,7 +44,7 @@ def load_stylegan_model(model_data, path, device='cuda'):
         model.gen = SGAN1_gen
     else:
         datastr = 'conference' if model_data.startswith('conference') else 'kitchenlivingdining'
-        ckpt = download(path=path, file=f'SGAN2_{datastr}.pt')
+        ckpt = download(path=path, file=f'SGAN2_{datastr}.ckpt')
         model = GAN.load_from_checkpoint(ckpt, strict=False).to(device)
         model.get_mean_latent()
 
@@ -86,7 +86,7 @@ def load_blobgan_model(model_data, path, device='cuda', fixed_noise=False):
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-m", "--model_name", default='blobgan', choices=['blobgan', 'stylegan'])
     parser.add_argument("-d", "--model_data", default='bed',
                         help="Choose a pretrained model. This must be a string that begins either with `bed` (bedrooms),"

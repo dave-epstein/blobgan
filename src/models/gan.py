@@ -56,7 +56,8 @@ class GAN(BaseModule):
     log_timing_every_n_steps: Optional[int] = -1
     log_fid_every_n_steps: Optional[int] = -1
     log_fid_every_epoch: bool = True
-    fid_n_imgs: Optional[int] = 5000
+    fid_n_imgs: Optional[int] = 50000
+    fid_stats_name: Optional[str] = None
     fid_num_workers: Optional[int] = 24
     valtest_log_all: bool = False
     accumulate: bool = True
@@ -91,6 +92,8 @@ class GAN(BaseModule):
                 '`model.log_images_every_n_steps` must be divisible by `trainer.log_every_n_steps` without remainder'
         assert self.log_fid_every_n_steps < 0 or self.log_fid_every_n_steps % self.trainer.log_every_n_steps == 0, \
             '`model.log_fid_every_n_steps` must be divisible by `trainer.log_every_n_steps` without remainder'
+        assert not ((self.log_fid_every_n_steps > -1 or self.log_fid_every_epoch) and (not self.fid_stats_name)), \
+            'Cannot compute FID without name of statistics file to use.'
 
     def configure_optimizers(self) -> Union[optim, List[optim]]:
         G_reg_ratio = self.G_reg_every / ((self.G_reg_every + 1) or -1)
@@ -134,11 +137,9 @@ class GAN(BaseModule):
                 out = self.generator([z], return_image_only=True).add_(1).div_(2).mul_(255)
             return out
         if is_rank_zero():
-            dataset = self.trainer.datamodule.path.name
-            fid_split = "train" if dataset == "church" else "custom"
-            fid_score = fid.compute_fid(gen=gen_fn, dataset_name=f"lsun_{dataset}",
+            fid_score = fid.compute_fid(gen=gen_fn, dataset_name=self.fid_stats_name,
                                         dataset_res=256, num_gen=self.fid_n_imgs,
-                                        dataset_split=fid_split, device=self.device,
+                                        dataset_split="custom", device=self.device,
                                         num_workers=self.fid_num_workers)
         else:
             fid_score = 0.0
