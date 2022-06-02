@@ -81,6 +81,10 @@ python src/run.py +experiment=[blobgan,local,jitter] wandb.name='20-blob BlobGAN
 
 Other parameters of interest are likely `trainer.log_every_n_steps`, `model.log_images_every_n_steps`, and `model.log_fid_every_n_steps`, which control frequency of logging scalars, images, and FID (set any of the latter two to -1 to disable). Also check out `checkpoint.every_n_train_steps` and `checkpoint.save_top_k` which dictate checkpoint saving frequency and decide how many most recent checkpoints to keep (`-1` means keep everything).
 
+### Changing model feature dimensions
+
+To change `d_in`, set both `model.layout_net.feature_dim` and `model.generator.override_c_in` to the same value. To change `d_style`, change `model.dim`.
+
 ### Logging FID during training
 
 In the initial codebase setup, you should have run `scripts/setup_fid.py` which will download and install FID statistics for three different datasets:
