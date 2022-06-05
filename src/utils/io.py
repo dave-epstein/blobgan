@@ -165,7 +165,7 @@ class Checkpoint(PLModelCheckpoint):
         return should_update_best_and_save
 
 
-def load_pretrained_weights(name, pretrained, model):
+def load_pretrained_weights(name, pretrained, model, strict=True):
     if pretrained:
         state_dict_prefix = None
         load_fn = 'load_state_dict'
@@ -185,7 +185,7 @@ def load_pretrained_weights(name, pretrained, model):
         if state_dict_prefix is not None:
             state_dict_prefix += '.'
             state = {k.replace(state_dict_prefix, ''): v for k, v in state.items() if k.startswith(state_dict_prefix)}
-        getattr(model, load_fn)(state)
+        getattr(model, load_fn)(state, strict=strict)
         print_once(f'Loaded state from {pretrained} for {name}')
     return model
 

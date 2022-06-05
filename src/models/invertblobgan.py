@@ -62,8 +62,9 @@ class BlobGANInverter(BaseModule):
         super().__init__()
         self.save_hyperparameters()
         cfg = to_dataclass_cfg(self.generator, BlobGAN)
-        self.generator_pretrained.log_dir = '/home/dave/adobe_code/logs'
-        self.generator = load_pretrained_weights('BlobGAN', self.generator_pretrained, BlobGAN(**cfg))
+        if self.generator_pretrained.log_dir is None:
+            self.generator_pretrained.log_dir = 'logs/'
+        self.generator = load_pretrained_weights('BlobGAN', self.generator_pretrained, BlobGAN(**cfg), strict=False)
         del self.generator.discriminator
         del self.generator.generator
         del self.generator.layout_net
@@ -140,8 +141,6 @@ class BlobGANInverter(BaseModule):
         for k in ('xs', 'ys', 'covs', 'sizes', 'features', 'spatial_style'):
             latent_l2_loss.append((layout_pred_fake[k] - layout_gt_fake[k].detach()).pow(2).mean())
         losses['fake_latents_MSE'] = sum(latent_l2_loss) / len(latent_l2_loss)
-
-        z_pred_real = self.inverter(batch_real)
 
         layout_pred_real, reconstr_real = self.generator.gen(z_pred_fake, ema=True, viz=log_images, ret_layout=True,
                                                              mlp_idx=len(self.generator.layout_net_ema.mlp))

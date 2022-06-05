@@ -17,6 +17,7 @@ dataset:
 model:
   name: BlobGANInverter
   lr: 0.002
+  log_images_every_n_steps: 1000
   lambda: # Needed for convenience since can't input λ on command line
     real_LPIPS: 1
     real_MSE: 1
@@ -26,7 +27,7 @@ model:
   λ: ${.lambda}
   G_pretrained:
     key: state_dict
-    log_dir: /path/to/logs
+    log_dir: null # Defaults to $PWD/logs
     project: ${wandb.project}
   generator: ${model.G}
   generator_pretrained: ${model.G_pretrained}
