@@ -22,34 +22,37 @@ __all__ = ['download', 'download_mean_latent', 'download_model', 'download_cherr
            'viz_score_fn', 'norm_img', 'for_canvas', 'draw_labels', 'clone_layout']
 
 
-def get_model_name(model_str):
+def get_model_name(model_str, override=None):
     if ' ' in model_str:
         model_str = model_str.split(' ')[1]
     if model_str.startswith('bed'):
-        model = 'bedrooms'
+        try: model = override['bed']
+        except: model = 'bedrooms'
     elif model_str.startswith('kitchen'):
-        model = 'kitchen_living_dining'
+        try: model = override['kitchen']
+        except: model = 'kitchen_living_dining'
     elif model_str.startswith('conference'):
-        model = 'conference_rooms'
+        try: model = override['kitchen']
+        except: model = 'conference_rooms'
     else:
         raise ValueError('Model name must start with either `bed`, `kitchen`, or `conference`.')
     return model
 
 
-def download_model(model_str, path='pretrained'):
-    return download(model_str, suffix='.ckpt', path=path, load=False)
+def download_model(model_str, path='pretrained', **kwargs):
+    return download(model_str, suffix='.ckpt', path=path, load=False, **kwargs)
 
 
-def download_mean_latent(model_str, path='pretrained'):
-    return download(model_str, suffix='_mean_latent.pt', path=path, load=True)
+def download_mean_latent(model_str, path='pretrained', **kwargs):
+    return download(model_str, suffix='_mean_latent.pt', path=path, load=True, **kwargs)
 
 
-def download_cherrypicked(model_str, path='pretrained'):
-    return download(model_str, suffix='_cherrypicked.pt', path=path, load=True)
+def download_cherrypicked(model_str, path='pretrained', **kwargs):
+    return download(model_str, suffix='_cherrypicked.pt', path=path, load=True, **kwargs)
 
 
-def download(model_str=None, suffix=None, path='.', load=False, file=None):
-    file = file or (get_model_name(model_str) + suffix)
+def download(model_str=None, suffix=None, path='.', load=False, file=None, **kwargs):
+    file = file or (get_model_name(model_str, **kwargs) + suffix)
     local_path = os.path.join(path, file)
     if not os.path.isfile(local_path) and primary():
         dl_path = f'http://efrosgans.eecs.berkeley.edu/blobgan/{file}'

@@ -420,7 +420,11 @@ class BlobGAN(BaseModule):
             if truncate is not None:
                 mlp_idx = -1
                 noise = layout_net.mlp[:mlp_idx](noise)
-                noise = (self.mean_latent * truncate) + (noise * (1 - truncate))
+                try:
+                    noise = (self.mean_latent * truncate) + (noise * (1 - truncate))
+                except AttributeError:
+                    self.get_mean_latent(ema=ema)
+                    noise = (self.mean_latent * truncate) + (noise * (1 - truncate))
             metadata = layout_net(noise, num_features, mlp_idx)
 
         try:
