@@ -63,7 +63,10 @@ def load_blobgan_model(model_data, path, device='cuda', fixed_noise=False):
         model.mean_latent = download_mean_latent(model_data, path).to(device)
     except:
         model.get_mean_latent()
-    model.cherry_picked = download_cherrypicked(model_data, path).to(device)
+    try:
+        model.cherry_picked = download_cherrypicked(model_data, path).to(device)
+    except:
+        pass
     COLORS = KLD_COLORS if 'kitchen' in model_data else BED_CONF_COLORS
     model.colors = COLORS
     noise = [torch.randn((1, 1, 16 * 2 ** ((i + 1) // 2), 16 * 2 ** ((i + 1) // 2))).to(device) for i in
@@ -89,7 +92,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-m", "--model_name", default='blobgan', choices=['blobgan', 'stylegan'])
     parser.add_argument("-d", "--model_data", default='bed',
-                        help="Choose a pretrained model. This must be a string that begins either with `bed` (bedrooms),"
+                        help="Choose a pretrained model. This must be a string that begins either with `bed_no_jitter` (bedrooms, trained without jitter), "
+                             "`bed` (bedrooms),"
                              " `kitchen` (kitchens, living rooms, and dining rooms),"
                              " or `conference` (conference rooms).")
     parser.add_argument("-dl", "--dl_dir", default='models',

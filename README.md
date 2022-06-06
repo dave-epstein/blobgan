@@ -57,6 +57,8 @@ python scripts/load_model.py --model_name stylegan --model_data conference --tru
 ```
 Note that the first run may take a minute or two longer as custom C++ code is compiled. See the command's help for more details and options: `scripts/load_model.py --help`
 
+Using these functions, you can access pretrained models on bedrooms (trained with or without jitter); conference rooms; and kitchens, living rooms, and dining rooms.
+
 ## Training your own model
 
 **Before training your model**, you'll need to modify `src/configs/experiments/local.yaml` to include your WandB information and machine-specific configuration (such as path to data -- `dataset.path` or `dataset.basepath` -- and number of GPUs `trainer.gpus`). Alternatively, you can exclude `local` from the `experiments` option in the commands below and specify these parameters directly on the command line. 
@@ -112,6 +114,16 @@ python src/run.py +experiment=[gan,local] wandb.name='Conference room StyleGAN2'
 ```
 
 This uses default StyleGAN2 hyperparameters: R1 regularization on D every 16 steps, path length regularization on G every 4, R1 weight 50 or gamma=100 (the weight is gamma/2).
+
+### Training inversion encoders
+
+The same is true for training an inversion encoder. See this example command:
+
+```bash
+python src/run.py +experiment=[invertblobgan,local] wandb.name='Inversion model' +model.G_pretrained.id="BLOBGAN MODEL ID HERE" +model.trunc_min=0.2 +model.trunc_max=0.4 model.lambda.fake_latents_MSE=10
+```
+
+Be sure to specify `model.G_pretrained.id` to match the ID of the BlobGAN model you are trying to invert. Also, you can set `model.G_pretrained.log_dir` to tell the program where to look for the model logs (this defaults to `./logs` if unspecified). The options `trunc_min` and `trunc_max` specify what truncation level to use (randomly sampled within the specified interval) when sampling fake images. If both are set to the same value (including zero, the default), this value will always be used.
 
 ## Known issues and upcoming functionality
  

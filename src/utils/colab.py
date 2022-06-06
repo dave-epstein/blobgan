@@ -25,7 +25,10 @@ __all__ = ['download', 'download_mean_latent', 'download_model', 'download_cherr
 def get_model_name(model_str, override=None):
     if ' ' in model_str:
         model_str = model_str.split(' ')[1]
-    if model_str.startswith('bed'):
+    if model_str.startswith('bed_no_jitter'):
+        try: model = override['bed_no_jitter']
+        except: model = 'bedrooms93'
+    elif model_str.startswith('bed'):
         try: model = override['bed']
         except: model = 'bedrooms'
     elif model_str.startswith('kitchen'):
