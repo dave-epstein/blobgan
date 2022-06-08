@@ -142,7 +142,8 @@ class BlobGANInverter(BaseModule):
             latent_l2_loss.append((layout_pred_fake[k] - layout_gt_fake[k].detach()).pow(2).mean())
         losses['fake_latents_MSE'] = sum(latent_l2_loss) / len(latent_l2_loss)
 
-        layout_pred_real, reconstr_real = self.generator.gen(z_pred_fake, ema=True, viz=log_images, ret_layout=True,
+        z_pred_real = self.inverter(batch_real.detach())
+        layout_pred_real, reconstr_real = self.generator.gen(z_pred_real, ema=True, viz=log_images, ret_layout=True,
                                                              mlp_idx=len(self.generator.layout_net_ema.mlp))
 
         losses['real_MSE'] = (batch_real - reconstr_real).pow(2).mean()
