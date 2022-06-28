@@ -9,7 +9,7 @@ here_dir = os.path.dirname(__file__)
 sys.path.append(os.path.join(here_dir, '..', 'src'))
 os.environ['PYTHONPATH'] = os.path.join(here_dir, '..', 'src')
 
-from models import BlobGAN, GAN
+from models import BlobGAN, GAN, BlobGANInverter
 from utils import download_model, download_mean_latent, download_cherrypicked, KLD_COLORS, BED_CONF_COLORS, \
     viz_score_fn, for_canvas, draw_labels, download
 
@@ -86,11 +86,19 @@ def load_blobgan_model(model_data, path, device='cuda', fixed_noise=False):
     return model
 
 
+def load_inversion_model(model_data, path, device):
+    ckpt = download(model_data, suffix='_invert.ckpt', path=path, load=False)
+    d_out = torch.load(ckpt, map_location='cpu')['state_dict']['inverter.final_linear.1.weight'].shape[0]
+    model = BlobGANInverter.load_from_checkpoint(ckpt, strict=False, load_only_inverter=True, inverter_d_out=d_out).to(
+        device)
+    return model
+
+
 if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("-m", "--model_name", default='blobgan', choices=['blobgan', 'stylegan'])
+    parser.add_argument("-m", "--model_name", default='blobgan', choices=['blo  bgan', 'stylegan', 'blobgan_inverter'])
     parser.add_argument("-d", "--model_data", default='bed',
                         help="Choose a pretrained model. This must be a string that begins either with `bed_no_jitter` (bedrooms, trained without jitter), "
                              "`bed` (bedrooms),"
@@ -116,22 +124,28 @@ if __name__ == "__main__":
                         type=float)
     parser.add_argument('--device', default='cuda',
                         help='Specify the device on which to run the code, in PyTorch syntax, e.g. `cuda`, `cpu`, `cuda:3`.')
+    parser.add_argument('--fixed_spatial_noise', action='store_true',
+                        help='Whether to use random spatial noise to generate images. '
+                             'This is false by default for general use cases, but set it to true for things like animation.')
     args = parser.parse_args()
 
     blobgan = args.model_name == 'blobgan'
+    stylegan = args.model_name == 'stylegan'
 
     save_dir = Path(args.save_dir)
     (save_dir / 'imgs').mkdir(exist_ok=True, parents=True)
 
     if blobgan:
-        model = load_blobgan_model(args.model_data, args.dl_dir, args.device)
+        model = load_blobgan_model(args.model_data, args.dl_dir, args.device, fixed_noise=args.fixed_spatial_noise)
 
         if args.save_blobs:
             (save_dir / 'blobs').mkdir(exist_ok=True, parents=True)
             if args.label_blobs:
                 (save_dir / 'blobs_labeled').mkdir(exist_ok=True, parents=True)
-    else:
+    elif stylegan:
         model = load_stylegan_model(args.model_data, args.dl_dir, args.device)
+    else:
+        raise NotImplementedError('Inversion of images from command line not yet supported. ')
 
     n_to_gen = args.n_imgs
     n_gen = 0
