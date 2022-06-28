@@ -38,7 +38,7 @@ class LayoutGenerator(nn.Module):
     def __post_init__(self):
         super().__init__()
         if self.feature_jitter_xy:
-            print('Warning! This parameter is here only to support loading of old checkpoints, and does not function.'
+            print('Warning! This parameter is here only to support loading of old checkpoints, and does not function. '
                   'Unless you are loading a model that has this value set, it should not be used. To control jitter, '
                   'set model.feature_jitter_xy directly.')
         # {x_i, y_i, feature_i, covariance_i}, bg feature, and cluster sizes

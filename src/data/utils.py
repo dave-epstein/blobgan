@@ -39,6 +39,12 @@ class ImageFolderWithFilenames(ImageFolder):
             dataset = make_dataset(directory, class_to_idx, extensions=extensions, is_valid_file=is_valid_file)
             if is_rank_zero():
                 torch.save(dataset, cache_path)
+        except EOFError:
+            print_once(f'Error loading cache from {directory},'
+                       f' likely because dataset is small and read/write were attempted concurrently. '
+                       f'Proceeding by remaking dataset in-memory.')
+            dataset = make_dataset(directory, class_to_idx, extensions=extensions, is_valid_file=is_valid_file)
+        print_once(f'{len(dataset)} images in dataset')
         return dataset
 
     def __getitem__(self, i):

@@ -51,6 +51,8 @@ class BlobGANInverter(BaseModule):
     valtest_log_all: bool = False
     # Resuming
     generator_pretrained: Optional[Union[str, DictConfig]] = None
+    load_only_inverter: bool = False
+    inverter_d_out: Optional[int] = None
     # Optim
     lr: float = 0.002
     eps: float = 1e-5
@@ -64,13 +66,15 @@ class BlobGANInverter(BaseModule):
         cfg = to_dataclass_cfg(self.generator, BlobGAN)
         if self.generator_pretrained.log_dir is None:
             self.generator_pretrained.log_dir = 'logs/'
-        self.generator = load_pretrained_weights('BlobGAN', self.generator_pretrained, BlobGAN(**cfg), strict=False)
-        del self.generator.discriminator
-        del self.generator.generator
-        del self.generator.layout_net
-        freeze(self.generator)
+        if not self.load_only_inverter:
+            self.generator = load_pretrained_weights('BlobGAN', self.generator_pretrained, BlobGAN(**cfg), strict=False)
+            del self.generator.discriminator
+            del self.generator.generator
+            del self.generator.layout_net
+            freeze(self.generator)
         self.inverter = networks.get_network(**self.inverter,
-                                             d_out=self.generator.layout_net_ema.mlp[-1].weight.shape[0])
+                                             d_out=self.inverter_d_out or
+                                                   self.generator.layout_net_ema.mlp[-1].weight.shape[0])
         self.L_LPIPS = LPIPS(net='vgg', verbose=False)
         freeze(self.L_LPIPS)
         self.λ = Lossλs(**self.λ)

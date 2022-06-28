@@ -56,7 +56,7 @@ def download_cherrypicked(model_str, path='pretrained', **kwargs):
 
 def download(model_str=None, suffix=None, path='.', load=False, file=None, **kwargs):
     file = file or (get_model_name(model_str, **kwargs) + suffix)
-    local_path = os.path.join(path, file)
+    local_path = os.path.join(path, os.path.basename(file))
     if not os.path.isfile(local_path) and primary():
         dl_path = f'http://efrosgans.eecs.berkeley.edu/blobgan/{file}'
         download_url(dl_path, path)
@@ -79,7 +79,7 @@ def norm_img(img):
 
 
 def for_canvas(img):
-    return img[0].round().permute(1, 2, 0).clamp(min=0, max=255).cpu().numpy().astype(np.uint8)
+    return img.detach()[0].round().permute(1, 2, 0).clamp(min=0, max=255).cpu().numpy().astype(np.uint8)
 
 
 def draw_labels(img, layout, T, colors, layout_i=0):
@@ -160,7 +160,7 @@ def DraggableBlobMap(notebook_locals):
         def render(self, to_canvas=True):
             # Resplat
             del self.L['feature_img']
-            self.L, img = model.gen(layout=self.L, covs_raw=False, **render_kwargs)
+            self.L, img = model.gen(layout=self.L, **render_kwargs)
 
             # Render images on canvas
             blobs = for_canvas(self.L['feature_img'].mul(255))

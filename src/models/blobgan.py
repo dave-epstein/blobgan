@@ -180,8 +180,9 @@ class BlobGAN(BaseModule):
     def gen(self, z=None, layout=None, ema=False, norm_img=False, ret_layout=False, ret_latents=False, noise=None,
             **kwargs):
         assert (z is not None) or (layout is not None)
-        kwargs['return_metadata'] = ret_layout
-        layout = self.generate_layout(z, metadata=layout, ema=ema, **kwargs)
+        if layout is not None and 'covs_raw' not in kwargs:
+            kwargs['covs_raw'] = False
+        layout = self.generate_layout(z, layout=layout, ret_layout=ret_layout, ema=ema, **kwargs)
         gen_input = {
             'input': layout['feature_grid'],
             'styles': {k: layout[k] for k in SPLAT_KEYS} if self.spatial_style else z,
@@ -286,7 +287,7 @@ class BlobGAN(BaseModule):
 
     def splat_features(self, xs: Tensor, ys: Tensor, features: Tensor, covs: Tensor, sizes: Tensor, size: int,
                        score_size: int, viz_size: Optional[int] = None, viz: bool = False,
-                       return_metadata: bool = True,
+                       ret_layout: bool = True,
                        covs_raw: bool = True, pyramid: bool = True, no_jitter: bool = False,
                        no_splat: bool = False, viz_score_fn=None,
                        **kwargs) -> Dict:
@@ -302,7 +303,7 @@ class BlobGAN(BaseModule):
             viz_size: visualized grid in RGB dimension
             viz: whether to visualize
             covs_raw: whether covs already processed or not
-            return_metadata: whether to return dict with metadata
+            ret_layout: whether to return dict with layout info
             viz_score_fn: map from raw score to new raw score for generating blob maps. if you want to artificially enlarge blob borders, e.g., you can send in lambda s: s*1.5
             no_splat: return without computing scores, can be useful for visualizing
             no_jitter: manually disable jittering. useful for consistent results at test if model trained with jitter
@@ -374,10 +375,10 @@ class BlobGAN(BaseModule):
 
         feature_grid = splat_features_from_scores(ret['scores_pyramid'][size], features, size, channels_last=False)
         ret.update({'feature_grid': feature_grid, 'feature_img': None, 'entropy_img': None})
-        if return_metadata:
-            metadata = {'xs': xs, 'ys': ys, 'covs': covs, 'raw_scores': scores, 'sizes': sizes,
+        if ret_layout:
+            layout = {'xs': xs, 'ys': ys, 'covs': covs, 'raw_scores': scores, 'sizes': sizes,
                         'composed_scores': d_scores, 'features': features}
-            ret.update(metadata)
+            ret.update(layout)
         if viz:
             if viz_score_fn is not None:
                 viz_posterior = viz_score_fn(scores)
@@ -388,10 +389,10 @@ class BlobGAN(BaseModule):
             ret.update(self.visualize_features(xs, ys, viz_size, features, scores_viz, **kwargs))
         return ret
 
-    def generate_layout(self, noise: Optional[Tensor] = None, return_metadata: bool = False, ema: bool = False,
+    def generate_layout(self, z: Optional[Tensor] = None, ret_layout: bool = False, ema: bool = False,
                         size: Optional[int] = None, viz: bool = False,
                         num_features: Optional[int] = None,
-                        metadata: Optional[Dict[str, Tensor]] = None,
+                        layout: Optional[Dict[str, Tensor]] = None,
                         mlp_idx: Optional[int] = None,
                         score_size: Optional[int] = None,
                         viz_size: Optional[int] = None,
@@ -399,50 +400,50 @@ class BlobGAN(BaseModule):
                         **kwargs) -> Dict[str, Tensor]:
         """
         Args:
-            noise: [N x D] tensor of noise
+            z: [N x D] tensor of noise
             mlp_idx: idx at which to split layout net MLP used for truncating
             num_features: how many features if not drawn randomly
             ema: use EMA version or not
             size: H, W output for feature grid
             viz: return RGB viz of feature grid
-            return_metadata: if true, return an RGB image demonstrating feature placement
+            ret_layout: if true, return an RGB image demonstrating feature placement
             score_size: size at which to render score grid before downsampling to size
             viz_size: visualized grid in RGB dimension
             truncate: if not None, use this as factor for computing truncation. requires self.mean_latent to be set. 0 = no truncation. 1 = full truncation.
-            metadata: output in format returned by return_metadata, can be used to generate instead of fwd pass
+            layout: output in format returned by ret_layout, can be used to generate instead of fwd pass
         Returns: [N x C x H x W] tensor of input, optionally [N x 3 x H_out x W_out] visualization of feature spread
         """
         if num_features is None:
             num_features = random.randint(self.n_features_min, self.n_features_max)
-        if metadata is None:
+        if layout is None:
             layout_net = self.layout_net_ema if ema else self.layout_net
-            assert noise is not None
+            assert z is not None
             if truncate is not None:
                 mlp_idx = -1
-                noise = layout_net.mlp[:mlp_idx](noise)
+                z = layout_net.mlp[:mlp_idx](z)
                 try:
-                    noise = (self.mean_latent * truncate) + (noise * (1 - truncate))
+                    z = (self.mean_latent * truncate) + (z * (1 - truncate))
                 except AttributeError:
                     self.get_mean_latent(ema=ema)
-                    noise = (self.mean_latent * truncate) + (noise * (1 - truncate))
-            metadata = layout_net(noise, num_features, mlp_idx)
+                    z = (self.mean_latent * truncate) + (z * (1 - truncate))
+            layout = layout_net(z, num_features, mlp_idx)
 
         try:
             G = self.generator
         except AttributeError:
             G = self.generator_ema
 
-        ret = self.splat_features(**metadata, size=size or G.size_in, viz_size=viz_size or G.size,
-                                  viz=viz, return_metadata=return_metadata, score_size=score_size or (size or G.size),
+        ret = self.splat_features(**layout, size=size or G.size_in, viz_size=viz_size or G.size,
+                                  viz=viz, ret_layout=ret_layout, score_size=score_size or (size or G.size),
                                   pyramid=True,
                                   **kwargs)
 
         if self.spatial_style:
-            ret['spatial_style'] = metadata['spatial_style']
-        if 'noise' in metadata:
-            ret['noise'] = metadata['noise']
-        if 'h_stdev' in metadata:
-            ret['h_stdev'] = metadata['h_stdev']
+            ret['spatial_style'] = layout['spatial_style']
+        if 'noise' in layout:
+            ret['noise'] = layout['noise']
+        if 'h_stdev' in layout:
+            ret['h_stdev'] = layout['h_stdev']
         return ret
 
     def get_mean_latent(self, n_trunc: int = 10000, ema=True):
@@ -553,7 +554,7 @@ class BlobGAN(BaseModule):
                     if self.accumulate and self.n_ema_sample:
                         with torch.no_grad():
                             z = self.sample_z.to(self.device)
-                            imgs['gen_imgs_ema'] = self.gen(z, ema=True, viz=True)
+                            layout, imgs['gen_imgs_ema'] = self.gen(z, ema=True, viz=True, ret_layout=True)
                             imgs['feature_imgs_ema'] = layout['feature_img']
                     imgs = {k: v.clone().detach().float().cpu() for k, v in imgs.items() if v is not None}
                     self._log_image_dict(imgs, mode, square_grid=False, ncol=len(batch_real))
