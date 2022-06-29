@@ -13,11 +13,10 @@ We also provide an [📓 interactive demo notebook](https://dave.ml/blobgan/demo
 
 * 🖌️️ Generate and edit realistic images with an interactive UI
 * 📹 Create animated videos showing off your edited scenes
+* 📸 **(new!)** Upload your own image and convert it into blobs!
 
-And, **coming soon!**
-
-* 📸 Upload your own image and convert it into blobs!
-* 🧬 Programmatically modify images and reproduce results from our paper
+And, coming soon:
+* 🧬 More edits, as shown in the paper! Code for cloning, restyling, rotating, and reshaping blobs.
 
 ## Setup
 
