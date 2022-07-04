@@ -3,4 +3,4 @@ defaults:
 categories: [kitchen,living,dining]
 category: null
 dataloader:
-  batch_size: 32
+  batch_size: 24

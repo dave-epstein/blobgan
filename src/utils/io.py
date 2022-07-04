@@ -221,7 +221,7 @@ def get_checkpoint_path(log_dir: str, project: str, id: str, step: Optional[int]
         try:
             fn = next(filter(lambda fn: all(f(fn) for f in filters), checkpoints))
         except StopIteration:
-            raise ValueError(f'No checkpoint found matching criteria. Please check parameters and try again.\n'
+            raise ValueError(f'No checkpoint found at {base_path} matching criteria. Please check parameters and try again.\n'
                              f'Valid checkpoints are: {", ".join(map(os.path.basename, checkpoints))}')
     epoch, = re.search('epoch=(\d+)', fn).groups()
     step, = re.search('step=(\d+)', fn).groups()

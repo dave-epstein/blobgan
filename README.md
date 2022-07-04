@@ -104,6 +104,12 @@ python scripts/setup_fid.py --action compute_new --path /path/to/new/data --name
 
 Then, pass `model.fid_stats_name=newdata` on the command line.
 
+Note that the precomputed FID statistics are on 256px images.
+
+### Resuming training
+
+To continue a training run that was terminated, simply add `resume.id=PREVIOUS RUN ID`. To resume from a previous run but start a new WandB run (e.g. to avoid overwriting previous checkpoints), also pass in `wandb.id=null`.
+
 ### Training StyleGAN2
 
 Many of the above command line options apply (for controlling data and logging). For example, to train a StyleGAN2 model on LSUN conference rooms, run:
@@ -123,11 +129,6 @@ python src/run.py +experiment=[invertblobgan,local] wandb.name='Inversion model'
 ```
 
 Be sure to specify `model.G_pretrained.id` to match the ID of the BlobGAN model you are trying to invert. Also, you can set `model.G_pretrained.log_dir` to tell the program where to look for the model logs (this defaults to `./logs` if unspecified). The options `trunc_min` and `trunc_max` specify what truncation level to use (randomly sampled within the specified interval) when sampling fake images. If both are set to the same value (including zero, the default), this value will always be used.
-
-## Known issues and upcoming functionality
- 
-* Scripts to reproduce paper figures
-* Inversion pretrained models and code
 
 ## Citation
 

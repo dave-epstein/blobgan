@@ -216,6 +216,7 @@ class BlobGAN(BaseModule):
             fid_score = 0.0
         fid_score = self.all_gather(fid_score).max().item()
         self.log_scalars({'fid': fid_score}, mode, **kwargs)
+        return fid_score
 
     # Training and evaluation
     @torch.no_grad()

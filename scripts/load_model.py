@@ -25,7 +25,7 @@ def load_SGAN1_bedrooms(path, device='cuda'):
     return model.to(device)
 
 
-def load_stylegan_model(model_data, path, device='cuda'):
+def load_stylegan_model1(model_data, path, device='cuda'):
     if model_data.startswith('bed'):
         model = load_SGAN1_bedrooms(path, device)
         Z = torch.randn((10000, 512)).to(device)
@@ -43,16 +43,23 @@ def load_stylegan_model(model_data, path, device='cuda'):
 
         model.gen = SGAN1_gen
     else:
+        raise ValueError('Only bedrooms supported for SGAN1.')
+
+
+def load_stylegan_model(model_data, path, device='cuda'):
+    if model_data.startswith('bed'):
+        datastr = 'bed'
+    else:
         datastr = 'conference' if model_data.startswith('conference') else 'kitchenlivingdining'
-        ckpt = download(path=path, file=f'SGAN2_{datastr}.ckpt')
-        model = GAN.load_from_checkpoint(ckpt, strict=False).to(device)
-        model.get_mean_latent()
+    ckpt = download(path=path, file=f'SGAN2_{datastr}.ckpt')
+    model = GAN.load_from_checkpoint(ckpt, strict=False).to(device)
+    model.get_mean_latent()
 
-        def SGAN2_gen(z, truncate):
-            return model.generator_ema([z], return_image_only=True, truncation=1 - truncate,
-                                       truncation_latent=model.mean_latent).add_(1).div_(2).mul_(255)
+    def SGAN2_gen(z, truncate):
+        return model.generator_ema([z], return_image_only=True, truncation=1 - truncate,
+                                   truncation_latent=model.mean_latent).add_(1).div_(2).mul_(255)
 
-        model.gen = SGAN2_gen
+    model.gen = SGAN2_gen
     return model
 
 
@@ -98,7 +105,8 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("-m", "--model_name", default='blobgan', choices=['blo  bgan', 'stylegan', 'blobgan_inverter'])
+    parser.add_argument("-m", "--model_name", default='blobgan',
+                        choices=['blo  bgan', 'stylegan', 'stylegan1', 'blobgan_inverter'])
     parser.add_argument("-d", "--model_data", default='bed',
                         help="Choose a pretrained model. This must be a string that begins either with `bed_no_jitter` (bedrooms, trained without jitter), "
                              "`bed` (bedrooms),"
@@ -131,6 +139,7 @@ if __name__ == "__main__":
 
     blobgan = args.model_name == 'blobgan'
     stylegan = args.model_name == 'stylegan'
+    sgan1 = args.model_name == 'stylegan1'
 
     save_dir = Path(args.save_dir)
     (save_dir / 'imgs').mkdir(exist_ok=True, parents=True)
@@ -144,6 +153,8 @@ if __name__ == "__main__":
                 (save_dir / 'blobs_labeled').mkdir(exist_ok=True, parents=True)
     elif stylegan:
         model = load_stylegan_model(args.model_data, args.dl_dir, args.device)
+    elif sgan1:
+        model = load_stylegan1_model(args.model_data, args.dl_dir, args.device)
     else:
         raise NotImplementedError('Inversion of images from command line not yet supported. ')
 

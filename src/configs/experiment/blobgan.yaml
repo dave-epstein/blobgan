@@ -10,7 +10,7 @@ dataset:
   category: bedroom
   resolution: ${model.resolution}
   dataloader:
-    batch_size: 16
+    batch_size: 24
     drop_last: true
 model:
   name: BlobGAN

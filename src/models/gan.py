@@ -145,6 +145,7 @@ class GAN(BaseModule):
             fid_score = 0.0
         fid_score = self.all_gather(fid_score).max().item()
         self.log_scalars({'fid': fid_score}, mode, **kwargs)
+        return fid_score
 
     def get_mean_latent(self, n_trunc: int = 10000, ema=True):
         G = self.generator_ema if ema else self.generator

@@ -16,12 +16,6 @@ os.environ['PYTHONPATH'] = os.path.join(here_dir, '..', 'src')
 from utils import download
 
 
-def load_fn(x):
-    x = F.resize(torch.from_numpy(x).permute(2, 0, 1), 256)
-    x = F.center_crop(x, 256).permute(1, 2, 0)
-    return np.array(x)
-
-
 if __name__ == "__main__":
     import argparse
 
@@ -42,10 +36,19 @@ if __name__ == "__main__":
     parser.add_argument('-j', '--num_workers', default=8,
                         help='Number of workers to use for FID stats generation.',
                         type=int)
+    parser.add_argument('-r', '--resolution', default=256,
+                        help='Image resolution to use before feeding images into FID pipeline (where they are resized to 299).',
+                        type=int)
     parser.add_argument('--device', default='cuda',
                         help='Specify the device on which to run the code, in PyTorch syntax, '
                              'e.g. `cuda`, `cpu`, `cuda:3`.')
     args = parser.parse_args()
+
+
+    def load_fn(x):
+        x = F.resize(torch.from_numpy(x).permute(2, 0, 1), args.resolution)
+        x = F.center_crop(x, args.resolution).permute(1, 2, 0)
+        return np.array(x)
 
     if args.action == 'download':
         path = os.path.join(os.path.dirname(cleanfid.__file__), "stats")
