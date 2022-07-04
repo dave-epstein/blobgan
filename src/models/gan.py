@@ -135,7 +135,8 @@ class GAN(BaseModule):
                 out = self.generator_ema([z], return_image_only=True).add_(1).div_(2).mul_(255)
             else:
                 out = self.generator([z], return_image_only=True).add_(1).div_(2).mul_(255)
-            return out
+            return out.clamp(min=0, max=255)
+
         if is_rank_zero():
             fid_score = fid.compute_fid(gen=gen_fn, dataset_name=self.fid_stats_name,
                                         dataset_res=256, num_gen=self.fid_n_imgs,
@@ -165,7 +166,7 @@ class GAN(BaseModule):
                 `validate`/`test` log total loss and return images
         Returns: see description for `mode` above
         """
-         # Set up modules and data
+        # Set up modules and data
         train = mode == 'train'
         train_G = train and optimizer_idx == 0 and not self.freeze_G
         train_D = train and (optimizer_idx == 1 or self.freeze_G)

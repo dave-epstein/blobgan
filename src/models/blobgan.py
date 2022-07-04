@@ -205,7 +205,7 @@ class BlobGAN(BaseModule):
     @torch.no_grad()
     def log_fid(self, mode, **kwargs):
         def gen_fn(z):
-            return self.gen(z, ema=self.accumulate, norm_img=True)
+            return self.gen(z, ema=self.accumulate, norm_img=True).clamp(min=0, max=255)
 
         if is_rank_zero():
             fid_score = fid.compute_fid(gen=gen_fn, dataset_name=self.fid_stats_name,
