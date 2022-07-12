@@ -86,7 +86,7 @@ Other parameters of interest are likely `trainer.log_every_n_steps`, `model.log_
 
 To change `d_in`, set both `model.layout_net.feature_dim` and `model.generator.override_c_in` to the same value. To change `d_style`, change `model.dim`.
 
-### Logging FID during training
+### Logging FID during training and at test
 
 In the initial codebase setup, you should have run `scripts/setup_fid.py` which will download and install FID statistics for three different datasets:
 
@@ -104,7 +104,15 @@ python scripts/setup_fid.py --action compute_new --path /path/to/new/data --name
 
 Then, pass `model.fid_stats_name=newdata` on the command line.
 
-Note that the precomputed FID statistics are on 256px images.
+Note that the precomputed FID statistics are on 256px images. You will need to recompute if training at higher resolution.
+
+To run FID logging at test time, a simple snippet such as the following will return the score:
+```python
+model = load_blobgan_model('bed', 'models', 'cuda', fixed_noise=False)
+model.fid_stats_name = 'lsun_bedroom'
+model.fid_n_imgs = 50000
+print(model.log_fid('train'))
+```
 
 ### Resuming training
 

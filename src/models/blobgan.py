@@ -214,8 +214,11 @@ class BlobGAN(BaseModule):
                                         num_workers=self.fid_num_workers, z_dim=self.noise_dim)
         else:
             fid_score = 0.0
-        fid_score = self.all_gather(fid_score).max().item()
-        self.log_scalars({'fid': fid_score}, mode, **kwargs)
+        try:
+            fid_score = self.all_gather(fid_score).max().item()
+            self.log_scalars({'fid': fid_score}, mode, **kwargs)
+        except AttributeError:
+            pass
         return fid_score
 
     # Training and evaluation
