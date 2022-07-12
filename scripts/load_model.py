@@ -106,7 +106,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-m", "--model_name", default='blobgan',
-                        choices=['blo  bgan', 'stylegan', 'stylegan1'])
+                        choices=['blobgan', 'stylegan', 'stylegan1'])
     parser.add_argument("-d", "--model_data", default='bed',
                         help="Choose a pretrained model. This must be a string that begins either with `bed_no_jitter` (bedrooms, trained without jitter), "
                              "`bed` (bedrooms),"
