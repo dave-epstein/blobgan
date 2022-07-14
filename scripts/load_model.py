@@ -54,12 +54,6 @@ def load_stylegan_model(model_data, path, device='cuda'):
     ckpt = download(path=path, file=f'SGAN2_{datastr}.ckpt')
     model = GAN.load_from_checkpoint(ckpt, strict=False).to(device)
     model.get_mean_latent()
-
-    def SGAN2_gen(z, truncate):
-        return model.generator_ema([z], return_image_only=True, truncation=1 - truncate,
-                                   truncation_latent=model.mean_latent).add_(1).div_(2).mul_(255)
-
-    model.gen = SGAN2_gen
     return model
 
 

@@ -16,7 +16,7 @@ from torch.optim import Optimizer
 from models import networks
 from models.base import BaseModule
 from utils import FromConfig, run_at_step, get_D_stats, G_path_loss, D_R1_loss, freeze, is_rank_zero, accumulate, \
-    mixing_noise
+    mixing_noise, print_once
 
 
 @dataclass
@@ -127,6 +127,20 @@ class GAN(BaseModule):
                 self.log_fid("train")
             except:
                 pass
+
+    def gen(self, z, truncate, ema=True, norm_img=True):
+        G = self.generator_ema if ema else self.generator
+        try:
+            imgs = G([z], return_image_only=True, truncation=1 - truncate,
+                 truncation_latent=self.mean_latent)
+        except AttributeError:
+            print_once('Computing mean latent for generation.')
+            self.get_mean_latent()
+            imgs = G([z], return_image_only=True, truncation=1 - truncate,
+                 truncation_latent=self.mean_latent)
+        if norm_img:
+            imgs = imgs.add_(1).div_(2).mul_(255)
+        return imgs
 
     @torch.no_grad()
     def log_fid(self, mode, **kwargs):
