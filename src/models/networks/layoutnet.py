@@ -32,8 +32,6 @@ class LayoutGenerator(nn.Module):
     p_swap_style: float = 0.0
     feature_jitter_xy: float = 0.0  # Legacy, unused
     feature_dropout: float = 0.0
-    shift_bias: float = 0.0
-    shift_scale: float = 1.0
 
     def __post_init__(self):
         super().__init__()
@@ -89,7 +87,7 @@ class LayoutGenerator(nn.Module):
             style_features = out[..., end_dim:]
             style_features = torch.cat((bg_style_feat[:, None], style_features), 1)
             ret['spatial_style'] = style_features
-        ret['covs'] = ret['covs'].detach()
+        # ret['covs'] = ret['covs'].detach()
         if self.norm_features:
             for k in ('features', 'spatial_style', 'shape_features'):
                 if k in ret:
