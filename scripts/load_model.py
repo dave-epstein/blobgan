@@ -25,7 +25,7 @@ def load_SGAN1_bedrooms(path, device='cuda'):
     return model.to(device)
 
 
-def load_stylegan_model1(model_data, path, device='cuda'):
+def load_stylegan1_model(model_data, path, device='cuda'):
     if model_data.startswith('bed'):
         model = load_SGAN1_bedrooms(path, device)
         Z = torch.randn((10000, 512)).to(device)
